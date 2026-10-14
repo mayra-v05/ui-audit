@@ -1,0 +1,308 @@
+{
+  "name": "ui-audit",
+  "displayName": "UI Audit — design & bug checker",
+  "description": "Scant je site of lokale dev-server op UI-fouten (uitlijning, spacing, padding, responsive), dode knoppen/links en backend-fouten. Dashboard per project, device preview en export naar Claude, Claude Code of mail.",
+  "version": "0.2.0",
+  "publisher": "mayavx",
+  "license": "UNLICENSED",
+  "icon": "media/icon.png",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Testing",
+    "Linters",
+    "Visualization",
+    "Other"
+  ],
+  "keywords": [
+    "ui",
+    "design",
+    "qa",
+    "responsive",
+    "spacing",
+    "accessibility",
+    "audit",
+    "claude"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "uiAudit",
+          "title": "UI Audit",
+          "icon": "media/activity.svg"
+        }
+      ]
+    },
+    "views": {
+      "uiAudit": [
+        {
+          "id": "uiAudit.projects",
+          "name": "Projecten",
+          "icon": "media/activity.svg"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "uiAudit.projects",
+        "contents": "Check een live website of je lokale dev-server op UI-fouten, dode knoppen en backend-errors.\n[$(link) Check een URL](command:uiAudit.quickCheck)\n[$(add) Project met dev-server](command:uiAudit.newProject)\n[$(dashboard) Open dashboard](command:uiAudit.openDashboard)"
+      }
+    ],
+    "commands": [
+      {
+        "command": "uiAudit.quickCheck",
+        "title": "Check een URL (link plakken)",
+        "category": "UI Audit",
+        "icon": "$(link)"
+      },
+      {
+        "command": "uiAudit.openDashboard",
+        "title": "Open dashboard",
+        "category": "UI Audit",
+        "icon": "$(dashboard)"
+      },
+      {
+        "command": "uiAudit.newProject",
+        "title": "Nieuw project",
+        "category": "UI Audit",
+        "icon": "$(add)"
+      },
+      {
+        "command": "uiAudit.scan",
+        "title": "Scan project",
+        "category": "UI Audit",
+        "icon": "$(play)"
+      },
+      {
+        "command": "uiAudit.scanAll",
+        "title": "Scan alle projecten",
+        "category": "UI Audit",
+        "icon": "$(run-all)"
+      },
+      {
+        "command": "uiAudit.preview",
+        "title": "Device preview (telefoon / tablet / desktop)",
+        "category": "UI Audit",
+        "icon": "$(device-mobile)"
+      },
+      {
+        "command": "uiAudit.toggleLive",
+        "title": "Live-modus aan/uit (scan bij opslaan)",
+        "category": "UI Audit",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "uiAudit.editProject",
+        "title": "Project bewerken",
+        "category": "UI Audit",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "uiAudit.deleteProject",
+        "title": "Project verwijderen",
+        "category": "UI Audit",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "uiAudit.copyForClaude",
+        "title": "Kopieer issues als Claude-prompt",
+        "category": "UI Audit",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "uiAudit.fixWithClaudeCode",
+        "title": "Fix issues met Claude Code",
+        "category": "UI Audit",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "uiAudit.mailDeveloper",
+        "title": "Mail issues naar developer",
+        "category": "UI Audit",
+        "icon": "$(mail)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "uiAudit.quickCheck",
+          "when": "view == uiAudit.projects",
+          "group": "navigation@0"
+        },
+        {
+          "command": "uiAudit.newProject",
+          "when": "view == uiAudit.projects",
+          "group": "navigation@1"
+        },
+        {
+          "command": "uiAudit.scanAll",
+          "when": "view == uiAudit.projects",
+          "group": "navigation@2"
+        },
+        {
+          "command": "uiAudit.openDashboard",
+          "when": "view == uiAudit.projects",
+          "group": "navigation@3"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "uiAudit.scan",
+          "when": "viewItem == project",
+          "group": "inline@1"
+        },
+        {
+          "command": "uiAudit.preview",
+          "when": "viewItem == project",
+          "group": "inline@2"
+        },
+        {
+          "command": "uiAudit.scan",
+          "when": "viewItem == project",
+          "group": "1_main@1"
+        },
+        {
+          "command": "uiAudit.preview",
+          "when": "viewItem == project",
+          "group": "1_main@2"
+        },
+        {
+          "command": "uiAudit.toggleLive",
+          "when": "viewItem == project",
+          "group": "1_main@3"
+        },
+        {
+          "command": "uiAudit.copyForClaude",
+          "when": "viewItem == project",
+          "group": "2_export@1"
+        },
+        {
+          "command": "uiAudit.fixWithClaudeCode",
+          "when": "viewItem == project",
+          "group": "2_export@2"
+        },
+        {
+          "command": "uiAudit.mailDeveloper",
+          "when": "viewItem == project",
+          "group": "2_export@3"
+        },
+        {
+          "command": "uiAudit.editProject",
+          "when": "viewItem == project",
+          "group": "3_edit@1"
+        },
+        {
+          "command": "uiAudit.deleteProject",
+          "when": "viewItem == project",
+          "group": "3_edit@2"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "UI Audit",
+      "properties": {
+        "uiAudit.viewports": {
+          "type": "array",
+          "default": [],
+          "markdownDescription": "Eigen viewports om te scannen. Leeg = Desktop 1440, Tablet 768, Mobiel 390. Voorbeeld: `[{\"id\":\"mobile\",\"label\":\"Mobiel\",\"width\":375,\"height\":667,\"mobile\":true}]`",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "width": {
+                "type": "number"
+              },
+              "height": {
+                "type": "number"
+              },
+              "mobile": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "uiAudit.spacingBase": {
+          "type": "number",
+          "default": 4,
+          "description": "Basis van je spacing-grid in px. Waardes die hier geen veelvoud van zijn worden als 'off-grid' gemeld."
+        },
+        "uiAudit.clickTest": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Klik in de scan écht op knoppen waarvan niet zeker is of ze iets doen, en kijk of er iets gebeurt. **Gebruik alleen op test/dev-omgevingen** (knoppen als 'verwijder', 'betaal', 'verstuur' worden overgeslagen)."
+        },
+        "uiAudit.checkLinks": {
+          "type": "boolean",
+          "default": true,
+          "description": "Controleer of interne links een geldige pagina opleveren (geen 404/500)."
+        },
+        "uiAudit.checkExternalLinks": {
+          "type": "boolean",
+          "default": false,
+          "description": "Controleer ook links naar andere domeinen."
+        },
+        "uiAudit.developerEmail": {
+          "type": "string",
+          "default": "",
+          "description": "Standaard e-mailadres van de developer voor 'Mail developer'."
+        },
+        "uiAudit.chromePath": {
+          "type": "string",
+          "default": "",
+          "description": "Pad naar Chrome/Edge/Chromium. Leeg = automatisch zoeken."
+        },
+        "uiAudit.timeoutMs": {
+          "type": "number",
+          "default": 30000,
+          "description": "Maximale laadtijd per pagina (ms)."
+        },
+        "uiAudit.liveDelayMs": {
+          "type": "number",
+          "default": 1500,
+          "description": "Wachttijd na opslaan voordat Live-modus opnieuw scant (ms)."
+        },
+        "uiAudit.reloadPreviewOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Device preview herladen als je een bestand opslaat."
+        },
+        "uiAudit.showInProblems": {
+          "type": "boolean",
+          "default": true,
+          "description": "Toon gevonden issues ook in het Problems-paneel, op de regel in je broncode."
+        }
+      }
+    },
+    "keybindings": [
+      {
+        "command": "uiAudit.quickCheck",
+        "key": "ctrl+alt+u",
+        "mac": "cmd+alt+u"
+      }
+    ]
+  },
+  "scripts": {
+    "test": "node test/run.js",
+    "package": "npm run build && vsce package --no-dependencies --allow-missing-repository --skip-license",
+    "build": "esbuild extension.js --bundle --platform=node --target=node18 --external:vscode --outfile=dist/extension.js --log-level=warning",
+    "vscode:prepublish": "npm run build"
+  },
+  "dependencies": {
+    "puppeteer-core": "^24.43.1"
+  },
+  "devDependencies": {
+    "@vscode/vsce": "^4.0.0",
+    "esbuild": "^0.25.12"
+  }
+}

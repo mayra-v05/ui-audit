@@ -1,0 +1,8 @@
+test/**
+src/**
+node_modules/**
+extension.js
+.vscode/**
+**/*.map
+media/icon-src.html
+*.vsix

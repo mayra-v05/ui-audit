@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Testsite met fouten</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0; }
+  header { display: flex; gap: 16px; align-items: center; padding: 16px 24px; background: #111; color: #fff; }
+  header a { color: #fff; text-decoration: none; }
+  .btn { display: inline-block; padding: 12px 24px; border-radius: 8px; background: #2563eb; color: #fff; border: 0; font-size: 16px; }
+  .actions { display: flex; gap: 16px; padding: 24px; }
+  .list { padding: 24px; }
+  .list .item { margin-bottom: 16px; padding: 16px; background: #f3f4f6; }
+  .hero { width: 900px; padding: 40px; background: #eef; }
+  .muted { color: #c9c9c9; }
+  .tiny a { font-size: 10px; padding: 2px; }
+  .cards { display: flex; gap: 24px; padding: 24px; }
+  .card { width: 200px; height: 120px; background: #fafafa; border: 1px solid #ddd; padding: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <a href="/">Home</a>
+  <a href="#diensten">Diensten</a>
+  <a href="#">Over ons</a>
+  <a href="/bestaat-niet">Blog</a>
+  <a href="/contact.html">Contact</a>
+</header>
+
+<section class="hero">
+  <h1>Welkom bij de testsite</h1>
+  <p class="muted">Deze tekst heeft veel te weinig contrast met de achtergrond.</p>
+  <p>Lorem ipsum dolor sit amet, consectetur.</p>
+  <p>Prijs: <span id="prijs">undefined</span></p>
+</section>
+
+<div class="actions">
+  <button class="btn" onclick="alert('ok')">Werkt</button>
+  <button class="btn" style="padding: 12px 22px">Doet niks</button>
+  <button class="btn" id="btn-js">Via JS</button>
+  <button class="btn" style="margin-top:3px" onclick="void 0">Zakt 3px</button>
+</div>
+
+<div class="list">
+  <div class="item">Item 1</div>
+  <div class="item">Item 2</div>
+  <div class="item" style="margin-bottom: 20px">Item 3 (te veel ruimte eronder)</div>
+  <div class="item">Item 4</div>
+  <div class="item" style="margin-left: 3px">Item 5 (3px naar rechts)</div>
+</div>
+
+<div class="cards">
+  <div class="card">Kaart A</div>
+  <div class="card">Kaart B</div>
+  <div class="card">Kaart C</div>
+</div>
+
+<div class="tiny"><a href="/contact.html">x</a></div>
+
+<img src="/img/bestaat-niet.png">
+<img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='red'/></svg>" style="width:300px;height:100px" alt="vervormd">
+
+<script>
+  document.getElementById('btn-js').addEventListener('click', () => console.log('klik'));
+  fetch('/api/users').then(r => r.json()).then(d => {});
+  setTimeout(() => { throw new Error('Cannot read properties of undefined (reading "name")'); }, 10);
+</script>
+</body>
+</html>
