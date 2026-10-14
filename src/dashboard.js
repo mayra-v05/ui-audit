@@ -92,7 +92,7 @@ class DashboardPanel {
       }
       case 'copy':
         await vscode.env.clipboard.writeText(m.text);
-        return vscode.window.setStatusBarMessage('$(check) Gekopieerd', 2000);
+        return vscode.window.setStatusBarMessage('$(check) Copied', 2000);
       case 'export': return project && this.actions.exportIssues(project.id, m.format, m.ids);
     }
   }
@@ -106,7 +106,7 @@ class DashboardPanel {
     const nonce = crypto.randomBytes(16).toString('hex');
     const csp = `default-src 'none'; img-src ${this.panel.webview.cspSource} data:; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';`;
     return /* html */ `<!doctype html>
-<html lang="nl"><head><meta charset="utf-8">
+<html lang="en"><head><meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="${csp}">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
@@ -210,8 +210,8 @@ const vscode = acquireVsCodeApi();
 const saved = vscode.getState() || {};
 let S = { projects: [], project: null, scan: null, progress: null };
 let ui = Object.assign({ vp: 'all', sev: null, cats: [], q: '', showIgnored: false, sel: null, checked: [] }, saved.ui || {});
-const CAT = { layout: 'Layout', spacing: 'Spacing & consistentie', responsive: 'Responsive', functional: 'Knoppen & links', backend: 'Backend & console', content: 'Content', a11y: 'Toegankelijkheid' };
-const VPL = { desktop: 'Desktop', tablet: 'Tablet', mobile: 'Mobiel' };
+const CAT = { layout: 'Layout', spacing: 'Spacing & consistency', responsive: 'Responsive', functional: 'Buttons & links', backend: 'Backend & console', content: 'Content', a11y: 'Accessibility' };
+const VPL = { desktop: 'Desktop', tablet: 'Tablet', mobile: 'Mobile' };
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const send = (type, data) => vscode.postMessage(Object.assign({ type }, data || {}));
 const persist = () => vscode.setState({ ui });
@@ -251,7 +251,7 @@ function renderProgress() {
 function render() {
   const app = document.getElementById('app');
   if (!S.projects.length) {
-    app.innerHTML = '<div class="empty"><h2>Nog geen projecten</h2><p>Voeg een project toe met de URL van je site of lokale dev-server<br>(bijv. http://localhost:3000) en scan hem op UI-fouten.</p><div style="display:flex;gap:8px"><button class="primary" data-a="quickCheck">🔗 Check een URL</button><button data-a="newProject">+ Project met dev-server</button></div></div>';
+    app.innerHTML = '<div class="empty"><h2>No projects yet</h2><p>Add a project with the URL of your site or local dev server<br>(e.g. http://localhost:3000) and scan it for UI bugs.</p><div style="display:flex;gap:8px"><button class="primary" data-a="quickCheck">🔗 Check a URL</button><button data-a="newProject">+ Project with dev server</button></div></div>';
     return bind();
   }
   const p = S.project, scan = S.scan;
@@ -272,49 +272,49 @@ function render() {
   app.innerHTML = \`
   <div class="top">
     <select id="proj" aria-label="Project">\${S.projects.map((x) => \`<option value="\${x.id}" \${x.id === p.id ? 'selected' : ''}>\${esc(x.name)}\${x.counts ? ' (' + x.counts.total + ')' : ''}</option>\`).join('')}</select>
-    <button class="ghost" data-a="newProject" title="Nieuw project">+</button>
-    <button data-a="quickCheck" title="Plak een link en check die pagina direct (bijv. net live gezet)">🔗 Check URL</button>
+    <button class="ghost" data-a="newProject" title="New project">+</button>
+    <button data-a="quickCheck" title="Paste a link and check that page right away (e.g. just went live)">🔗 Check URL</button>
     <span class="url" title="\${esc(p.url)}">\${esc(p.url)}</span>
     <span class="spacer"></span>
-    \${scan ? \`<span class="sub">Laatste scan \${new Date(scan.scannedAt).toLocaleString('nl-NL', { dateStyle: 'short', timeStyle: 'short' })}</span>\` : ''}
-    <button class="ghost live \${p.live ? 'on' : ''}" data-a="toggleLive" title="Automatisch opnieuw scannen bij opslaan"><span class="dot"></span>Live</button>
-    <button data-a="preview" title="Bekijk de site op telefoon-, tablet- of desktopformaat">📱 Device preview</button>
-    <button class="ghost" data-a="editProject" title="Project bewerken">⚙︎</button>
+    \${scan ? \`<span class="sub">Last scan \${new Date(scan.scannedAt).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' })}</span>\` : ''}
+    <button class="ghost live \${p.live ? 'on' : ''}" data-a="toggleLive" title="Automatically rescan on save"><span class="dot"></span>Live</button>
+    <button data-a="preview" title="View the site at phone, tablet or desktop size">📱 Device preview</button>
+    <button class="ghost" data-a="editProject" title="Edit project">⚙︎</button>
     <button class="primary" id="scanBtn" data-a="scan" \${S.progress ? 'disabled' : ''}>⟳ Scan</button>
   </div>
   <div class="progress" id="progress" style="display:\${S.progress ? 'flex' : 'none'}"><div class="spin"></div><span class="txt">\${esc(S.progress || '')}</span></div>
-  \${!scan ? \`<div class="empty"><h2>Nog niet gescand</h2><p>Scan \${esc(p.url)} op desktop, tablet en mobiel.</p><button class="primary" data-a="scan">⟳ Nu scannen</button></div>\` : \`
+  \${!scan ? \`<div class="empty"><h2>Not scanned yet</h2><p>Scan \${esc(p.url)} on desktop, tablet and mobile.</p><button class="primary" data-a="scan">⟳ Scan now</button></div>\` : \`
   <div class="summary">
     <button class="stat error \${ui.sev === 'error' ? 'active' : ''}" data-sev="error"><b>\${counts.error}</b><span>Errors</span></button>
-    <button class="stat warning \${ui.sev === 'warning' ? 'active' : ''}" data-sev="warning"><b>\${counts.warning}</b><span>Waarschuwingen</span></button>
+    <button class="stat warning \${ui.sev === 'warning' ? 'active' : ''}" data-sev="warning"><b>\${counts.warning}</b><span>Warnings</span></button>
     <button class="stat info \${ui.sev === 'info' ? 'active' : ''}" data-sev="info"><b>\${counts.info}</b><span>Info</span></button>
-    \${S.history && S.history.length > 1 ? \`<button class="stat new \${ui.sev === 'new' ? 'active' : ''}" data-sev="new"><b>+\${counts.new}</b><span>Nieuw</span></button>
-    <div class="stat fixed"><b>\${(scan.resolved || []).length}</b><span>Opgelost</span></div>\` : ''}
+    \${S.history && S.history.length > 1 ? \`<button class="stat new \${ui.sev === 'new' ? 'active' : ''}" data-sev="new"><b>+\${counts.new}</b><span>New</span></button>
+    <div class="stat fixed"><b>\${(scan.resolved || []).length}</b><span>Fixed</span></div>\` : ''}
   </div>
   <div class="toolbar">
-    <div class="seg" role="tablist">\${['all', ...vps].map((v) => \`<button class="\${ui.vp === v ? 'on' : ''}" data-vp="\${v}">\${v === 'all' ? 'Alle' : (v === 'mobile' ? '📱 ' : v === 'tablet' ? '▭ ' : '🖥 ') + VPL[v]}</button>\`).join('')}</div>
+    <div class="seg" role="tablist">\${['all', ...vps].map((v) => \`<button class="\${ui.vp === v ? 'on' : ''}" data-vp="\${v}">\${v === 'all' ? 'All' : (v === 'mobile' ? '📱 ' : v === 'tablet' ? '▭ ' : '🖥 ') + VPL[v]}</button>\`).join('')}</div>
     <div class="chips">\${Object.keys(CAT).filter((c) => catCounts[c]).map((c) => \`<button class="chip \${ui.cats.includes(c) ? 'on' : ''}" data-cat="\${c}">\${CAT[c]}<i>\${catCounts[c]}</i></button>\`).join('')}</div>
     <span class="spacer" style="flex:1"></span>
-    <input type="search" id="q" placeholder="Zoek in issues…" value="\${esc(ui.q)}">
-    <label class="sub" style="align-items:center;gap:4px;display:flex"><input type="checkbox" id="showIgn" \${ui.showIgnored ? 'checked' : ''}> genegeerd</label>
+    <input type="search" id="q" placeholder="Search issues…" value="\${esc(ui.q)}">
+    <label class="sub" style="align-items:center;gap:4px;display:flex"><input type="checkbox" id="showIgn" \${ui.showIgnored ? 'checked' : ''}> ignored</label>
   </div>
   <div class="main">
     <div class="list" id="list">
-      \${list.length ? list.map((i, n) => issueHTML(i, n)).join('') : '<div class="empty"><h2>Niets gevonden 🎉</h2><p>Geen issues met deze filters.</p></div>'}
-      \${(scan.resolved || []).length ? \`<details class="resolved"><summary>✓ \${scan.resolved.length} issues opgelost sinds de vorige scan</summary><ul>\${scan.resolved.map((r) => '<li>' + esc(r.title) + (r.selector ? ' <code>' + esc(r.selector) + '</code>' : '') + '</li>').join('')}</ul></details>\` : ''}
+      \${list.length ? list.map((i, n) => issueHTML(i, n)).join('') : '<div class="empty"><h2>Nothing found 🎉</h2><p>No issues match these filters.</p></div>'}
+      \${(scan.resolved || []).length ? \`<details class="resolved"><summary>✓ \${scan.resolved.length} issues fixed since the previous scan</summary><ul>\${scan.resolved.map((r) => '<li>' + esc(r.title) + (r.selector ? ' <code>' + esc(r.selector) + '</code>' : '') + '</li>').join('')}</ul></details>\` : ''}
     </div>
     <div class="viewer" id="viewer">\${viewerHTML(list, shotVp)}</div>
   </div>
   <div class="footer">
-    <span class="count">\${ui.checked.filter((id) => list.some((i) => i.id === id)).length ? ui.checked.filter((id) => list.some((i) => i.id === id)).length + ' geselecteerd' : list.length + ' issues in beeld'} → export</span>
-    <button data-a="selAll">\${ui.checked.length ? 'Selectie wissen' : 'Alles selecteren'}</button>
-    <button class="primary" data-exp="claude" title="Kopieer een kant-en-klare prompt voor Claude naar het klembord">✦ Kopieer voor Claude</button>
-    <button data-exp="claudeCode" title="Schrijft .ui-audit/issues.md + screenshots en start Claude Code in de terminal">⌘ Fix met Claude Code</button>
-    <button data-exp="mail" title="Mail naar de developer, met HTML-rapport als bijlage">✉ Mail developer</button>
-    <div class="menu" id="expMenu"><button data-a="expMenu">Exporteer ▾</button>
+    <span class="count">\${ui.checked.filter((id) => list.some((i) => i.id === id)).length ? ui.checked.filter((id) => list.some((i) => i.id === id)).length + ' selected' : list.length + ' issues shown'} → export</span>
+    <button data-a="selAll">\${ui.checked.length ? 'Clear selection' : 'Select all'}</button>
+    <button class="primary" data-exp="claude" title="Copy a ready-made prompt for Claude to the clipboard">✦ Copy for Claude</button>
+    <button data-exp="claudeCode" title="Writes .ui-audit/issues.md + screenshots and starts Claude Code in the terminal">⌘ Fix with Claude Code</button>
+    <button data-exp="mail" title="Mail to the developer, with the HTML report as an attachment">✉ Mail developer</button>
+    <div class="menu" id="expMenu"><button data-a="expMenu">Export ▾</button>
       <div class="pop">
         <button data-exp="md">Markdown (.md)</button>
-        <button data-exp="html">HTML-rapport met screenshots</button>
+        <button data-exp="html">HTML report with screenshots</button>
         <button data-exp="csv">CSV (Excel / Sheets / Jira)</button>
         <button data-exp="json">JSON</button>
       </div>
@@ -332,11 +332,11 @@ function issueHTML(i, n) {
   const m = i.measure;
   return \`<div class="issue \${sel ? 'sel' : ''} \${ignored(i) ? 'ignored' : ''}" data-id="\${i.id}">
     <div class="row" data-sel="\${i.id}">
-      <input type="checkbox" data-chk="\${i.id}" \${ui.checked.includes(i.id) ? 'checked' : ''} aria-label="Selecteer voor export">
+      <input type="checkbox" data-chk="\${i.id}" \${ui.checked.includes(i.id) ? 'checked' : ''} aria-label="Select for export">
       <span class="sev \${i.severity}"></span>
       <div>
         <div class="title">\${esc(i.title)}</div>
-        <div class="sub"><span>\${CAT[i.category] || i.category}</span>\${(i.viewports || []).map((v) => '<span class="badge">' + VPL[v] + '</span>').join('')}\${i.isNew ? '<span class="badge new">nieuw</span>' : ''}\${i.source ? '<span>📄 ' + esc(i.source.file) + ':' + i.source.line + '</span>' : ''}</div>
+        <div class="sub"><span>\${CAT[i.category] || i.category}</span>\${(i.viewports || []).map((v) => '<span class="badge">' + VPL[v] + '</span>').join('')}\${i.isNew ? '<span class="badge new">new</span>' : ''}\${i.source ? '<span>📄 ' + esc(i.source.file) + ':' + i.source.line + '</span>' : ''}</div>
       </div>
       <span class="sub">\${n + 1}</span>
     </div>
@@ -344,17 +344,17 @@ function issueHTML(i, n) {
       \${i.detail ? '<p>' + esc(i.detail).replace(/\\n/g, '<br>') + '</p>' : ''}
       \${i.suggestion ? '<p class="fix"><b>Fix:</b> ' + esc(i.suggestion) + '</p>' : ''}
       <dl class="kv">
-        \${i.selector ? '<dt>Selector</dt><dd><code>' + esc(i.selector) + '</code> <a class="link" data-copy="' + esc(i.selector) + '">kopieer</a></dd>' : ''}
-        \${m && m.expected !== undefined ? '<dt>Meting</dt><dd>verwacht <b>' + esc(m.expected) + '</b> · gevonden <b>' + esc(m.actual) + '</b>' + (m.property ? ' (' + esc(m.property) + ')' : '') + '</dd>' : ''}
-        \${i.source ? '<dt>Bron</dt><dd><a class="link" data-open="' + esc(i.source.path) + '" data-line="' + i.source.line + '">' + esc(i.source.file) + ':' + i.source.line + '</a></dd>' : ''}
+        \${i.selector ? '<dt>Selector</dt><dd><code>' + esc(i.selector) + '</code> <a class="link" data-copy="' + esc(i.selector) + '">copy</a></dd>' : ''}
+        \${m && m.expected !== undefined ? '<dt>Measurement</dt><dd>expected <b>' + esc(m.expected) + '</b> · found <b>' + esc(m.actual) + '</b>' + (m.property ? ' (' + esc(m.property) + ')' : '') + '</dd>' : ''}
+        \${i.source ? '<dt>Source</dt><dd><a class="link" data-open="' + esc(i.source.path) + '" data-line="' + i.source.line + '">' + esc(i.source.file) + ':' + i.source.line + '</a></dd>' : ''}
         \${i.style ? '<dt>CSS</dt><dd><a class="link" data-open="' + esc(i.style.path) + '" data-line="' + i.style.line + '">' + esc(i.style.file) + ':' + i.style.line + '</a> <code>' + esc(i.style.selector) + '</code></dd>' : ''}
-        \${i.examples ? '<dt>Ook in</dt><dd>' + i.examples.slice(0, 4).map((e) => '<code>' + esc(e) + '</code>').join('<br>') + '</dd>' : ''}
+        \${i.examples ? '<dt>Also in</dt><dd>' + i.examples.slice(0, 4).map((e) => '<code>' + esc(e) + '</code>').join('<br>') + '</dd>' : ''}
       </dl>
-      \${crop ? '<img class="crop" src="' + crop + '" alt="Uitsnede van het element">' : ''}
+      \${crop ? '<img class="crop" src="' + crop + '" alt="Crop of the element">' : ''}
       \${i.html ? '<pre>' + esc(i.html) + '</pre>' : ''}
       <div class="actions">
-        <button data-exp1="claude" data-id="\${i.id}">✦ Kopieer voor Claude</button>
-        <button data-ign="\${i.id}">\${ignored(i) ? 'Niet meer negeren' : 'Negeer (false positive)'}</button>
+        <button data-exp1="claude" data-id="\${i.id}">✦ Copy for Claude</button>
+        <button data-ign="\${i.id}">\${ignored(i) ? 'Stop ignoring' : 'Ignore (false positive)'}</button>
       </div>
     </div>\` : ''}
   </div>\`;
@@ -365,9 +365,9 @@ function viewerHTML(list, vp) {
   if (!scan || !vp) return '';
   const uri = scan.screenshotUris && scan.screenshotUris[vp];
   const meta = scan.viewports.find((v) => v.id === vp);
-  if (!uri || !meta) return '<div class="empty">Geen screenshot voor deze viewport.</div>';
+  if (!uri || !meta) return '<div class="empty">No screenshot for this viewport.</div>';
   const boxes = list.map((i, n) => ({ i, n, r: i.rects && i.rects[vp] })).filter((x) => x.r);
-  return \`<div class="viewer-head">\${VPL[vp]} · \${meta.width}px\${meta.shotWidth && meta.shotWidth !== meta.width ? ' (pagina rendert ' + meta.shotWidth + 'px breed!)' : ''} · \${boxes.length} markeringen \${ui.vp === 'all' ? '<span>(kies een viewport bovenaan om te wisselen)</span>' : ''}</div>
+  return \`<div class="viewer-head">\${VPL[vp]} · \${meta.width}px\${meta.shotWidth && meta.shotWidth !== meta.width ? ' (page renders ' + meta.shotWidth + 'px wide!)' : ''} · \${boxes.length} markers \${ui.vp === 'all' ? '<span>(choose a viewport at the top to switch)</span>' : ''}</div>
     <div class="shot" id="shot" data-w="\${meta.shotWidth || meta.width}" style="width:\${meta.shotWidth || meta.width}px">
       <img src="\${uri}" alt="Screenshot \${VPL[vp]}">
       \${boxes.map(({ i, n, r }) => \`<div class="box \${i.severity} \${ui.sel === i.id ? 'sel' : ''}" data-sel="\${i.id}" title="\${esc(i.title)}" style="left:\${r.x}px;top:\${r.y}px;width:\${Math.max(r.w, 6)}px;height:\${Math.max(r.h, 6)}px"><span class="n">\${n + 1}</span></div>\`).join('')}
@@ -382,12 +382,12 @@ function fitShot() {
   const scale = Math.min(1, avail / w);
   shot.style.transform = 'scale(' + scale + ')';
   shot.style.marginLeft = Math.max(16, (viewer.clientWidth - w * scale) / 2) + 'px';
-  // negatieve marge zodat de geschaalde hoogte geen lege ruimte geeft
+  // negative margin so the scaled height doesn't leave empty space
   const img = shot.querySelector('img');
   const apply = () => (shot.style.marginBottom = -(img.naturalHeight * (1 - scale)) + 16 + 'px');
   img.complete ? apply() : img.addEventListener('load', apply, { once: true });
   const selBox = shot.querySelector('.box.sel');
-  // alleen naar de markering scrollen als de selectie net veranderd is
+  // only scroll to the marker if the selection just changed
   if (selBox && lastSel !== ui.sel) viewer.scrollTop = Math.max(0, parseFloat(selBox.style.top) * scale - 120);
   lastSel = ui.sel;
 }

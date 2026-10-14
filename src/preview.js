@@ -2,11 +2,11 @@ const vscode = require('vscode');
 const crypto = require('crypto');
 
 const DEVICES = [
-  { id: 'se', label: 'iPhone SE', w: 375, h: 667, group: 'Telefoon' },
-  { id: 'iphone', label: 'iPhone 15', w: 393, h: 852, group: 'Telefoon' },
-  { id: 'promax', label: 'iPhone 15 Pro Max', w: 430, h: 932, group: 'Telefoon' },
-  { id: 'pixel', label: 'Pixel 8', w: 412, h: 915, group: 'Telefoon' },
-  { id: 'galaxy', label: 'Galaxy S (360)', w: 360, h: 780, group: 'Telefoon' },
+  { id: 'se', label: 'iPhone SE', w: 375, h: 667, group: 'Phone' },
+  { id: 'iphone', label: 'iPhone 15', w: 393, h: 852, group: 'Phone' },
+  { id: 'promax', label: 'iPhone 15 Pro Max', w: 430, h: 932, group: 'Phone' },
+  { id: 'pixel', label: 'Pixel 8', w: 412, h: 915, group: 'Phone' },
+  { id: 'galaxy', label: 'Galaxy S (360)', w: 360, h: 780, group: 'Phone' },
   { id: 'ipadmini', label: 'iPad mini', w: 768, h: 1024, group: 'Tablet' },
   { id: 'ipadpro', label: 'iPad Pro 11"', w: 834, h: 1194, group: 'Tablet' },
   { id: 'laptop', label: 'Laptop', w: 1280, h: 800, group: 'Desktop' },
@@ -54,7 +54,7 @@ class PreviewPanel {
   html(url, device) {
     const nonce = crypto.randomBytes(16).toString('hex');
     const csp = `default-src 'none'; frame-src * http: https: data:; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';`;
-    return /* html */ `<!doctype html><html lang="nl"><head><meta charset="utf-8">
+    return /* html */ `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="${csp}">
 <style>
 :root{--line:var(--vscode-panel-border, rgba(128,128,128,.25));--muted:var(--vscode-descriptionForeground)}
@@ -79,26 +79,26 @@ iframe{display:block;border:0;background:#fff;border-radius:calc(var(--r,36px) -
 </style></head><body>
 <div class="bar">
   <div class="seg" id="groups"></div>
-  <select id="dev" aria-label="Apparaat"></select>
-  <input class="w" id="w" type="number" min="240" max="3000" aria-label="Breedte"> × <input class="w" id="h" type="number" min="240" max="3000" aria-label="Hoogte">
-  <button id="rot" title="Draaien">⟲ Draai</button>
-  <button id="fit" title="Passend maken">⤢ Passend</button>
+  <select id="dev" aria-label="Device"></select>
+  <input class="w" id="w" type="number" min="240" max="3000" aria-label="Width"> × <input class="w" id="h" type="number" min="240" max="3000" aria-label="Height">
+  <button id="rot" title="Rotate">⟲ Rotate</button>
+  <button id="fit" title="Fit to window">⤢ Fit</button>
   <span class="dim" id="zoom"></span>
   <span class="spacer"></span>
   <input id="url" style="min-width:220px;flex:1;max-width:420px" aria-label="URL">
-  <button id="reload" title="Herladen">⟳</button>
+  <button id="reload" title="Reload">⟳</button>
   <button id="ext" title="Open in browser">↗</button>
-  <button class="primary" id="scan">Scan op fouten</button>
+  <button class="primary" id="scan">Scan for issues</button>
 </div>
 <div class="stage" id="stage"><div id="wrap" style="flex:none"><div class="device" id="device"><iframe id="frame" title="Preview"></iframe></div></div></div>
-<div class="note">Tip: de breedte bepaalt welke media queries actief zijn. Voor echte touch/user-agent-checks gebruikt de scan een geëmuleerde telefoon.</div>
+<div class="note">Tip: the width determines which media queries are active. For real touch/user-agent checks, the scan uses an emulated phone.</div>
 <script nonce="${nonce}">
 const vscode = acquireVsCodeApi();
 const DEVICES = ${JSON.stringify(DEVICES)};
 let st = Object.assign({ url: ${JSON.stringify(url)}, dev: ${JSON.stringify(device)}, w: 393, h: 852, fit: true, rotated: false }, vscode.getState() || {}, { url: ${JSON.stringify(url)} });
 const $ = (id) => document.getElementById(id);
 const groups = [...new Set(DEVICES.map((d) => d.group))];
-$('groups').innerHTML = groups.map((g) => '<button data-g="' + g + '">' + (g === 'Telefoon' ? '📱 ' : g === 'Tablet' ? '▭ ' : '🖥 ') + g + '</button>').join('');
+$('groups').innerHTML = groups.map((g) => '<button data-g="' + g + '">' + (g === 'Phone' ? '📱 ' : g === 'Tablet' ? '▭ ' : '🖥 ') + g + '</button>').join('');
 $('dev').innerHTML = groups.map((g) => '<optgroup label="' + g + '">' + DEVICES.filter((d) => d.group === g).map((d) => '<option value="' + d.id + '">' + d.label + ' — ' + d.w + '×' + d.h + '</option>').join('') + '</optgroup>').join('') + '<option value="custom">Aangepast</option>';
 
 function setDevice(id) {
@@ -110,13 +110,13 @@ function setDevice(id) {
 }
 function apply() {
   const d = DEVICES.find((x) => x.id === st.dev);
-  const group = d ? d.group : (st.w < 600 ? 'Telefoon' : st.w < 1100 ? 'Tablet' : 'Desktop');
+  const group = d ? d.group : (st.w < 600 ? 'Phone' : st.w < 1100 ? 'Tablet' : 'Desktop');
   document.querySelectorAll('[data-g]').forEach((b) => b.classList.toggle('on', b.dataset.g === group));
   $('dev').value = d ? d.id : 'custom';
   $('w').value = st.w; $('h').value = st.h;
   const dev = $('device'), f = $('frame');
   dev.classList.toggle('desk', group === 'Desktop');
-  dev.style.setProperty('--r', group === 'Telefoon' ? '44px' : group === 'Tablet' ? '24px' : '10px');
+  dev.style.setProperty('--r', group === 'Phone' ? '44px' : group === 'Tablet' ? '24px' : '10px');
   dev.style.setProperty('--p', group === 'Desktop' ? '0px' : '12px');
   f.style.width = st.w + 'px'; f.style.height = st.h + 'px';
   if ($('url').value !== st.url) $('url').value = st.url;
@@ -135,7 +135,7 @@ function fit() {
   $('zoom').textContent = Math.round(s * 100) + '%';
   $('fit').classList.toggle('primary', st.fit);
 }
-$('groups').onclick = (e) => { const g = e.target.closest('[data-g]'); if (!g) return; const d = DEVICES.find((x) => x.group === g.dataset.g && (g.dataset.g !== 'Telefoon' || x.id === 'iphone') && (g.dataset.g !== 'Desktop' || x.id === 'desktop')); setDevice(d.id); };
+$('groups').onclick = (e) => { const g = e.target.closest('[data-g]'); if (!g) return; const d = DEVICES.find((x) => x.group === g.dataset.g && (g.dataset.g !== 'Phone' || x.id === 'iphone') && (g.dataset.g !== 'Desktop' || x.id === 'desktop')); setDevice(d.id); };
 $('dev').onchange = () => $('dev').value !== 'custom' && setDevice($('dev').value);
 $('w').onchange = () => { st.w = +$('w').value; st.dev = 'custom'; apply(); };
 $('h').onchange = () => { st.h = +$('h').value; st.dev = 'custom'; apply(); };

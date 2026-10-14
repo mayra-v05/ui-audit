@@ -6,11 +6,11 @@ const STYLE = /\.(css|scss|sass|less|styl)$/i;
 const EXCLUDE = '**/{node_modules,dist,build,.next,.nuxt,.svelte-kit,out,coverage,.git,vendor,.ui-audit,public/build}/**';
 
 /**
- * Zoekt per issue het waarschijnlijkste bronbestand (+ regel) in de workspace,
- * op basis van id, classnames en zichtbare tekst van het element.
+ * Finds the most likely source file (+ line) in the workspace for each issue,
+ * based on the element's id, class names and visible text.
  */
 async function findSources(issues, folder, pageUrl) {
-  // Bestanden die bij de gescande URL horen krijgen voorrang bij gelijke score
+  // Files matching the scanned URL get priority on equal score
   let urlPath = '/';
   try { urlPath = new URL(pageUrl).pathname; } catch {}
   const routeName = urlPath.replace(/\/$/, '').split('/').pop().replace(/\.\w+$/, '') || 'index';
@@ -72,7 +72,7 @@ async function findSources(issues, folder, pageUrl) {
     }
     if (best && best.score >= 3) issue.source = { file: best.file, path: best.path, line: best.line };
 
-    // CSS-regel voor de meest specifieke class (handig bij spacing-issues)
+    // CSS rule for the most specific class (handy for spacing issues)
     const cls = (h.classes || []).filter((c) => c.length > 2);
     for (const c of cls) {
       const f = files.find((x) => x.isStyle && new RegExp(`\\.${esc(c)}\\b[^{]*\\{`).test(x.text));

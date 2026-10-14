@@ -60,7 +60,7 @@ function activate(ctx) {
     vscode.commands.registerCommand('uiAudit.mailDeveloper', async (arg) => { const id = await pick(arg); if (id) exportIssues(ctx, id, 'mail'); }),
   );
 
-  // Live-modus: bij opslaan opnieuw scannen (debounced) en de preview herladen
+  // Live mode: rescan on save (debounced) and reload the preview
   ctx.subscriptions.push(
     vscode.workspace.onDidSaveTextDocument((doc) => {
       if (doc.uri.scheme !== 'file' || /[\\/](\.ui-audit|node_modules|\.git)[\\/]/.test(doc.uri.fsPath)) return;
@@ -75,11 +75,11 @@ function activate(ctx) {
   );
 
   updateStatus();
-  // kleine API (gebruikt door de smoketest)
+  // small API (used by the smoke test)
   return { store, runScan: (id, o) => runScan(ctx, id, o), openDashboard: (id) => dash(id) };
 }
 
-// ---------------------------------------------------------------- projecten
+// ---------------------------------------------------------------- projects
 
 async function detectDevServers() {
   const found = [];
@@ -100,7 +100,7 @@ async function detectDevServers() {
           found.push({ url: `http://localhost:${port}/`, port, title: title.trim(), status: res.status });
           return;
         } catch {
-          /* niets op deze poort */
+          /* nothing on this port */
         }
       }
     })
@@ -108,24 +108,24 @@ async function detectDevServers() {
   return found.sort((a, b) => a.port - b.port);
 }
 
-/** Snel een (net live gezette) URL checken: link plakken → direct scannen. */
+/** Quickly check a URL (e.g. one that just went live): paste link → scan immediately. */
 async function quickCheck(ctx, presetUrl) {
   let url = normalizeUrl(presetUrl);
   if (!url) {
     let clip = '';
     try { clip = (await vscode.env.clipboard.readText()).trim(); } catch {}
     const input = await vscode.window.showInputBox({
-      title: 'UI Audit: check een URL',
-      prompt: 'Plak de link van de pagina die je wilt checken (bijv. wat de developer net live heeft gezet)',
+      title: 'UI Audit: check a URL',
+      prompt: 'Paste the link of the page you want to check (e.g. what the developer just put live)',
       value: /^https?:\/\/\S+$/i.test(clip) ? clip : '',
-      placeHolder: 'https://klant.nl/nieuwe-pagina',
+      placeHolder: 'https://example.com/new-page',
       ignoreFocusOut: true,
-      validateInput: (v) => (!v || normalizeUrl(v) ? null : 'Dit is geen geldige URL'),
+      validateInput: (v) => (!v || normalizeUrl(v) ? null : 'This is not a valid URL'),
     });
     url = normalizeUrl(input);
   }
   if (!url) return;
-  // Zelfde URL al eerder gecheckt? Dan in hetzelfde project, zodat je ziet wat er sinds de vorige keer is opgelost.
+  // Same URL checked before? Then use the same project, so you can see what was fixed since last time.
   let project = store.all().find((p) => p.url === url);
   if (!project) {
     const u = new URL(url);
@@ -140,19 +140,19 @@ const isLocalUrl = (u) => /^(file:|https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0
 
 async function newProject(ctx) {
   const qp = vscode.window.createQuickPick();
-  qp.title = 'UI Audit: nieuw project';
-  qp.placeholder = 'Kies een draaiende dev-server, of typ een URL (https://… of localhost:3000)';
+  qp.title = 'UI Audit: new project';
+  qp.placeholder = 'Choose a running dev server, or type a URL (https://… or localhost:3000)';
   qp.busy = true;
   const base = [
-    { label: '$(globe) Andere URL invoeren…', action: 'url' },
-    { label: '$(file-code) Lokaal HTML-bestand kiezen…', action: 'file' },
+    { label: '$(globe) Enter another URL…', action: 'url' },
+    { label: '$(file-code) Choose a local HTML file…', action: 'file' },
   ];
   qp.items = base;
   qp.show();
   detectDevServers().then((servers) => {
     qp.busy = false;
     qp.items = [
-      ...(servers.length ? [{ label: 'Gevonden dev-servers', kind: vscode.QuickPickItemKind.Separator }] : []),
+      ...(servers.length ? [{ label: 'Detected dev servers', kind: vscode.QuickPickItemKind.Separator }] : []),
       ...servers.map((s) => ({ label: `$(server) ${s.url}`, description: s.title || `HTTP ${s.status}`, url: s.url })),
       { label: '', kind: vscode.QuickPickItemKind.Separator },
       ...base,
@@ -172,7 +172,7 @@ async function newProject(ctx) {
 
   let url = choice.url;
   if (choice.action === 'url') {
-    url = await vscode.window.showInputBox({ title: 'URL van de site of dev-server', placeHolder: 'http://localhost:3000 of https://mijnsite.nl', validateInput: (v) => (normalizeUrl(v) ? null : 'Ongeldige URL') });
+    url = await vscode.window.showInputBox({ title: 'URL of the site or dev server', placeHolder: 'http://localhost:3000 or https://mysite.com', validateInput: (v) => (normalizeUrl(v) ? null : 'Invalid URL') });
   } else if (choice.action === 'file') {
     const f = await vscode.window.showOpenDialog({ canSelectMany: false, filters: { HTML: ['html', 'htm'] }, defaultUri: vscode.workspace.workspaceFolders?.[0]?.uri });
     if (f && f[0]) url = f[0].toString();
@@ -183,11 +183,11 @@ async function newProject(ctx) {
   const folders = vscode.workspace.workspaceFolders || [];
   let folder = folders[0];
   if (folders.length > 1) {
-    const f = await vscode.window.showWorkspaceFolderPick({ placeHolder: 'Bij welke map hoort dit project? (voor bronbestanden & Live-modus)' });
+    const f = await vscode.window.showWorkspaceFolderPick({ placeHolder: 'Which folder does this project belong to? (for source files & Live mode)' });
     if (f) folder = f;
   }
   const suggested = folder ? folder.name : safeHost(url);
-  const name = await vscode.window.showInputBox({ title: 'Projectnaam', value: suggested });
+  const name = await vscode.window.showInputBox({ title: 'Project name', value: suggested });
   if (!name) return;
   const project = await store.create({ name, url, workspaceFolder: folder ? folder.uri.fsPath : null });
   DashboardPanel.show(ctx, store, ctx.uiAuditActions, project.id);
@@ -210,12 +210,12 @@ const safeHost = (u) => { try { return new URL(u).host || path.basename(u); } ca
 async function pickProject() {
   const all = store.all();
   if (!all.length) {
-    const a = await vscode.window.showInformationMessage('Nog geen UI Audit-projecten.', 'Nieuw project');
+    const a = await vscode.window.showInformationMessage('No UI Audit projects yet.', 'New project');
     if (a) vscode.commands.executeCommand('uiAudit.newProject');
     return null;
   }
   if (all.length === 1) return all[0];
-  const p = await vscode.window.showQuickPick(all.map((x) => ({ label: x.name, description: x.url, id: x.id })), { placeHolder: 'Kies een project' });
+  const p = await vscode.window.showQuickPick(all.map((x) => ({ label: x.name, description: x.url, id: x.id })), { placeHolder: 'Choose a project' });
   return p ? store.get(p.id) : null;
 }
 
@@ -223,10 +223,10 @@ async function editProject(id) {
   const p = store.get(id);
   const what = await vscode.window.showQuickPick(
     [
-      { label: '$(edit) Naam wijzigen', a: 'name' },
-      { label: '$(globe) URL wijzigen', a: 'url', description: p.url },
-      { label: '$(folder) Gekoppelde map wijzigen', a: 'folder', description: p.workspaceFolder || 'geen' },
-      { label: '$(trash) Project verwijderen', a: 'delete' },
+      { label: '$(edit) Rename', a: 'name' },
+      { label: '$(globe) Change URL', a: 'url', description: p.url },
+      { label: '$(folder) Change linked folder', a: 'folder', description: p.workspaceFolder || 'none' },
+      { label: '$(trash) Delete project', a: 'delete' },
     ],
     { title: p.name }
   );
@@ -245,7 +245,7 @@ async function editProject(id) {
 
 async function deleteProject(id) {
   const p = store.get(id);
-  const ok = await vscode.window.showWarningMessage(`Project "${p.name}" en alle scans verwijderen?`, { modal: true }, 'Verwijderen');
+  const ok = await vscode.window.showWarningMessage(`Delete project "${p.name}" and all its scans?`, { modal: true }, 'Delete');
   if (ok) {
     await store.remove(id);
     diagnostics.clear();
@@ -256,19 +256,19 @@ async function toggleLive(id) {
   const p = store.get(id);
   p.live = !p.live;
   await store.save(p);
-  vscode.window.setStatusBarMessage(p.live ? `$(eye) Live-modus aan voor ${p.name}: scant opnieuw bij elke save` : `Live-modus uit voor ${p.name}`, 3000);
+  vscode.window.setStatusBarMessage(p.live ? `$(eye) Live mode on for ${p.name}: rescans on every save` : `Live mode off for ${p.name}`, 3000);
 }
 
 async function openPreview(ctx, id) {
   const p = store.get(id);
   if (p.url.startsWith('file:')) {
-    vscode.window.showWarningMessage('Device preview werkt met http(s)-URL\'s. Start een dev-server (bv. Live Server) en pas de project-URL aan.');
+    vscode.window.showWarningMessage('Device preview works with http(s) URLs. Start a dev server (e.g. Live Server) and update the project URL.');
     return;
   }
   PreviewPanel.show(ctx, p, (pid) => runScan(ctx, pid));
 }
 
-// ---------------------------------------------------------------- scannen
+// ---------------------------------------------------------------- scanning
 
 function viewportsFromConfig() {
   const v = cfg().get('viewports');
@@ -280,7 +280,7 @@ async function runScan(ctx, projectId, { silent = false } = {}) {
   const project = store.get(projectId);
   if (!project) return;
   if (scanning.has(projectId)) {
-    if (!silent) vscode.window.setStatusBarMessage('Er loopt al een scan voor dit project', 2000);
+    if (!silent) vscode.window.setStatusBarMessage('A scan is already running for this project', 2000);
     return;
   }
   const state = { cancelled: false };
@@ -309,7 +309,7 @@ async function runScan(ctx, projectId, { silent = false } = {}) {
       log: (t) => { log(t); progress && progress.report({ message: t }); },
     });
     if (state.cancelled) return null;
-    log('Bronbestanden zoeken…');
+    log('Finding source files…');
     const folder = project.workspaceFolder
       ? vscode.workspace.getWorkspaceFolder(vscode.Uri.file(project.workspaceFolder)) || { uri: vscode.Uri.file(project.workspaceFolder), name: path.basename(project.workspaceFolder), index: 0 }
       : isLocalUrl(project.url) ? vscode.workspace.workspaceFolders?.[0] : null;
@@ -328,11 +328,11 @@ async function runScan(ctx, projectId, { silent = false } = {}) {
     updateDiagnostics(p, result);
     const c = countIssues(result.issues, p.ignored);
     if (!silent && !(DashboardPanel.current && DashboardPanel.current.panel.visible)) {
-      const a = await vscode.window.showInformationMessage(`${project.name}: ${c.error} errors, ${c.warning} waarschuwingen, ${c.info} info`, 'Open dashboard');
+      const a = await vscode.window.showInformationMessage(`${project.name}: ${c.error} errors, ${c.warning} warnings, ${c.info} info`, 'Open dashboard');
       if (a) DashboardPanel.show(ctx, store, ctx.uiAuditActions, projectId);
     }
   } catch (e) {
-    vscode.window.showErrorMessage(`UI Audit: ${e.message}`, ...(/Chrome/.test(e.message) ? ['Instellingen'] : [])).then((a) => {
+    vscode.window.showErrorMessage(`UI Audit: ${e.message}`, ...(/Chrome/.test(e.message) ? ['Settings'] : [])).then((a) => {
       if (a) vscode.commands.executeCommand('workbench.action.openSettings', 'uiAudit.chromePath');
     });
   } finally {
@@ -367,14 +367,14 @@ function updateStatus() {
   const all = store.all().filter((p) => p.scans && p.scans.length);
   if (!all.length) {
     statusItem.text = '$(device-mobile) UI Audit';
-    statusItem.tooltip = 'Open het UI Audit-dashboard';
+    statusItem.tooltip = 'Open the UI Audit dashboard';
     statusItem.show();
     return;
   }
   const latest = all.sort((a, b) => (b.scans[0].date > a.scans[0].date ? 1 : -1))[0];
   const c = latest.scans[0].counts;
   statusItem.text = `${latest.live ? '$(eye)' : '$(device-mobile)'} ${latest.name}: $(error) ${c.error} $(warning) ${c.warning}`;
-  statusItem.tooltip = `UI Audit · ${latest.name}\n${c.error} errors, ${c.warning} waarschuwingen, ${c.info} info${latest.live ? '\nLive-modus aan' : ''}\nKlik om het dashboard te openen`;
+  statusItem.tooltip = `UI Audit · ${latest.name}\n${c.error} errors, ${c.warning} warnings, ${c.info} info${latest.live ? '\nLive mode on' : ''}\nClick to open the dashboard`;
   statusItem.show();
 }
 
@@ -383,26 +383,26 @@ function updateStatus() {
 async function exportIssues(ctx, projectId, format, ids) {
   const project = store.get(projectId);
   const scan = store.latestScan(project);
-  if (!scan) return vscode.window.showWarningMessage('Scan dit project eerst.');
+  if (!scan) return vscode.window.showWarningMessage('Scan this project first.');
   let issues = scan.issues.filter((i) => !(project.ignored || []).includes(i.id));
   if (ids && ids.length) issues = issues.filter((i) => ids.includes(i.id));
-  if (!issues.length) return vscode.window.showInformationMessage('Geen issues om te exporteren 🎉');
+  if (!issues.length) return vscode.window.showInformationMessage('No issues to export 🎉');
   const stamp = new Date().toISOString().slice(0, 10);
   const slug = project.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   const folder = project.workspaceFolder || vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 
   if (format === 'claude') {
     await vscode.env.clipboard.writeText(exporter.toClaudeMarkdown(project, scan, issues));
-    const a = await vscode.window.showInformationMessage(`Prompt met ${issues.length} issues gekopieerd. Plak hem in Claude.`, 'Open claude.ai', 'Fix met Claude Code');
+    const a = await vscode.window.showInformationMessage(`Prompt with ${issues.length} issues copied. Paste it into Claude.`, 'Open claude.ai', 'Fix with Claude Code');
     if (a === 'Open claude.ai') vscode.env.openExternal(vscode.Uri.parse('https://claude.ai/new'));
-    if (a === 'Fix met Claude Code') exportIssues(ctx, projectId, 'claudeCode', ids);
+    if (a === 'Fix with Claude Code') exportIssues(ctx, projectId, 'claudeCode', ids);
     return;
   }
 
   if (format === 'claudeCode') {
     let dirBase = folder;
     if (!dirBase) {
-      const f = await vscode.window.showOpenDialog({ canSelectFolders: true, canSelectFiles: false, openLabel: 'Kies de projectmap (broncode)' });
+      const f = await vscode.window.showOpenDialog({ canSelectFolders: true, canSelectFiles: false, openLabel: 'Choose the project folder (source code)' });
       if (!f) return;
       dirBase = f[0].fsPath;
     }
@@ -417,11 +417,11 @@ async function exportIssues(ctx, projectId, format, ids) {
     if (hasCli) {
       const term = vscode.window.createTerminal({ name: 'Claude Code · UI fixes', cwd: dirBase });
       term.show();
-      term.sendText(`claude "Lees .ui-audit/issues.md en bekijk de screenshots in .ui-audit/shots/. Los daarna de issues één voor één op in de broncode, errors eerst. Geef aan het eind per issue aan wat je hebt aangepast."`);
+      term.sendText(`claude "Read .ui-audit/issues.md and look at the screenshots in .ui-audit/shots/. Then fix the issues one by one in the source code, errors first. At the end, list per issue what you changed."`);
     } else {
       const doc = await vscode.workspace.openTextDocument(mdPath);
       vscode.window.showTextDocument(doc);
-      const a = await vscode.window.showWarningMessage('Claude Code CLI niet gevonden. issues.md is aangemaakt in .ui-audit/ — open Claude Code in deze map en vraag het die te lezen.', 'Installatie-instructies');
+      const a = await vscode.window.showWarningMessage('Claude Code CLI not found. issues.md was created in .ui-audit/ — open Claude Code in this folder and ask it to read that file.', 'Installation instructions');
       if (a) vscode.env.openExternal(vscode.Uri.parse('https://docs.claude.com/en/docs/claude-code/overview'));
     }
     return;
@@ -429,11 +429,11 @@ async function exportIssues(ctx, projectId, format, ids) {
 
   if (format === 'mail') {
     let to = cfg().get('developerEmail') || '';
-    const input = await vscode.window.showInputBox({ title: 'Mail naar developer', prompt: 'E-mailadres(sen), komma-gescheiden', value: to, placeHolder: 'dev@bureau.nl' });
+    const input = await vscode.window.showInputBox({ title: 'Mail to developer', prompt: 'Email address(es), comma-separated', value: to, placeHolder: 'dev@agency.com' });
     if (input === undefined) return;
     if (input && input !== to) {
-      const save = await vscode.window.showInformationMessage(`${input} onthouden als standaard developer?`, 'Ja', 'Nee');
-      if (save === 'Ja') await cfg().update('developerEmail', input, vscode.ConfigurationTarget.Global);
+      const save = await vscode.window.showInformationMessage(`Remember ${input} as the default developer?`, 'Yes', 'No');
+      if (save === 'Yes') await cfg().update('developerEmail', input, vscode.ConfigurationTarget.Global);
     }
     to = input;
     const reportDir = path.join(os.tmpdir(), 'ui-audit-reports');
@@ -442,13 +442,13 @@ async function exportIssues(ctx, projectId, format, ids) {
     fs.writeFileSync(reportPath, exporter.toHTML(project, scan, issues));
     const c = { error: 0, warning: 0 };
     issues.forEach((i) => (c[i.severity] = (c[i.severity] || 0) + 1));
-    const subject = `UI-audit ${project.name}: ${c.error} errors, ${c.warning} waarschuwingen`;
+    const subject = `UI audit ${project.name}: ${c.error} errors, ${c.warning} warnings`;
     let body = exporter.toMailBody(project, scan, issues);
     if (body.length > 1800) body = exporter.toMailBody(project, scan, issues, 6);
     const mailto = `mailto:${encodeURIComponent(to).replace(/%2C/gi, ',').replace(/%40/g, '@')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     openRaw(mailto);
     vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(reportPath));
-    vscode.window.showInformationMessage('Mail geopend. Sleep het HTML-rapport (nu zichtbaar in Finder/Verkenner) in de mail als bijlage.');
+    vscode.window.showInformationMessage('Mail opened. Drag the HTML report (now shown in Finder/Explorer) into the mail as an attachment.');
     return;
   }
 
@@ -466,11 +466,11 @@ async function exportIssues(ctx, projectId, format, ids) {
   fs.writeFileSync(target.fsPath, content);
   if (format === 'html') vscode.env.openExternal(target);
   else if (format !== 'csv') vscode.window.showTextDocument(await vscode.workspace.openTextDocument(target));
-  else vscode.window.showInformationMessage(`CSV opgeslagen: ${path.basename(target.fsPath)}`, 'Toon in map').then((a) => a && vscode.commands.executeCommand('revealFileInOS', target));
+  else vscode.window.showInformationMessage(`CSV saved: ${path.basename(target.fsPath)}`, 'Show in folder').then((a) => a && vscode.commands.executeCommand('revealFileInOS', target));
 }
 
 function openRaw(url) {
-  // mailto rechtstreeks via het OS openen (VS Code's Uri.parse codeert de body dubbel)
+  // open mailto directly via the OS (VS Code's Uri.parse double-encodes the body)
   if (process.platform === 'darwin') execFile('open', [url]);
   else if (process.platform === 'win32') execFile('cmd', ['/c', 'start', '""', url.replace(/&/g, '^&')]);
   else execFile('xdg-open', [url]);
@@ -493,7 +493,7 @@ class ProjectTree {
     if (el) {
       const p = store.get(el.id);
       const scan = store.latestScan(p);
-      if (!scan) return [Object.assign(new vscode.TreeItem('Nog niet gescand — klik om te scannen'), { command: { command: 'uiAudit.scan', title: 'Scan', arguments: [{ id: p.id }] }, iconPath: new vscode.ThemeIcon('play') })];
+      if (!scan) return [Object.assign(new vscode.TreeItem('Not scanned yet — click to scan'), { command: { command: 'uiAudit.scan', title: 'Scan', arguments: [{ id: p.id }] }, iconPath: new vscode.ThemeIcon('play') })];
       const byCat = {};
       for (const i of scan.issues) if (!(p.ignored || []).includes(i.id)) byCat[i.category] = (byCat[i.category] || 0) + 1;
       const icons = { layout: 'layout', spacing: 'symbol-ruler', responsive: 'device-mobile', functional: 'link', backend: 'server', content: 'file-media', a11y: 'accessibility' };
@@ -506,7 +506,7 @@ class ProjectTree {
       const item = new vscode.TreeItem(p.name, vscode.TreeItemCollapsibleState.Collapsed);
       item.id = p.id;
       item.description = c ? `${c.error} ✖  ${c.warning} ⚠${p.live ? '  · live' : ''}` : p.url;
-      item.tooltip = `${p.url}${c ? `\n${c.error} errors · ${c.warning} waarschuwingen · ${c.info} info` : ''}`;
+      item.tooltip = `${p.url}${c ? `\n${c.error} errors · ${c.warning} warnings · ${c.info} info` : ''}`;
       item.iconPath = new vscode.ThemeIcon(scanning.has(p.id) ? 'sync~spin' : c && c.error ? 'error' : c ? 'pass' : 'globe', c && c.error ? new vscode.ThemeColor('errorForeground') : undefined);
       item.contextValue = 'project';
       item.command = { command: 'uiAudit.openDashboard', title: 'Open dashboard', arguments: [{ id: p.id }] };

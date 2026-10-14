@@ -1,7 +1,7 @@
 {
   "name": "ui-audit",
   "displayName": "UI Audit — design & bug checker",
-  "description": "Scant je site of lokale dev-server op UI-fouten (uitlijning, spacing, padding, responsive), dode knoppen/links en backend-fouten. Dashboard per project, device preview en export naar Claude, Claude Code of mail.",
+  "description": "Scans your site or local dev server for UI bugs (alignment, spacing, padding, responsive), dead buttons/links and backend errors. Dashboard per project, device preview and export to Claude, Claude Code or mail.",
   "version": "0.2.0",
   "publisher": "mayavx",
   "license": "UNLICENSED",
@@ -51,13 +51,13 @@
     "viewsWelcome": [
       {
         "view": "uiAudit.projects",
-        "contents": "Check een live website of je lokale dev-server op UI-fouten, dode knoppen en backend-errors.\n[$(link) Check een URL](command:uiAudit.quickCheck)\n[$(add) Project met dev-server](command:uiAudit.newProject)\n[$(dashboard) Open dashboard](command:uiAudit.openDashboard)"
+        "contents": "Check a live website or your local dev server for UI bugs, dead buttons and backend errors.\n[$(link) Check a URL](command:uiAudit.quickCheck)\n[$(add) Project with dev server](command:uiAudit.newProject)\n[$(dashboard) Open dashboard](command:uiAudit.openDashboard)"
       }
     ],
     "commands": [
       {
         "command": "uiAudit.quickCheck",
-        "title": "Check een URL (link plakken)",
+        "title": "Check a URL (paste link)",
         "category": "UI Audit",
         "icon": "$(link)"
       },
@@ -69,7 +69,7 @@
       },
       {
         "command": "uiAudit.newProject",
-        "title": "Nieuw project",
+        "title": "New project",
         "category": "UI Audit",
         "icon": "$(add)"
       },
@@ -81,49 +81,49 @@
       },
       {
         "command": "uiAudit.scanAll",
-        "title": "Scan alle projecten",
+        "title": "Scan all projects",
         "category": "UI Audit",
         "icon": "$(run-all)"
       },
       {
         "command": "uiAudit.preview",
-        "title": "Device preview (telefoon / tablet / desktop)",
+        "title": "Device preview (phone / tablet / desktop)",
         "category": "UI Audit",
         "icon": "$(device-mobile)"
       },
       {
         "command": "uiAudit.toggleLive",
-        "title": "Live-modus aan/uit (scan bij opslaan)",
+        "title": "Toggle Live mode (scan on save)",
         "category": "UI Audit",
         "icon": "$(eye)"
       },
       {
         "command": "uiAudit.editProject",
-        "title": "Project bewerken",
+        "title": "Edit project",
         "category": "UI Audit",
         "icon": "$(gear)"
       },
       {
         "command": "uiAudit.deleteProject",
-        "title": "Project verwijderen",
+        "title": "Delete project",
         "category": "UI Audit",
         "icon": "$(trash)"
       },
       {
         "command": "uiAudit.copyForClaude",
-        "title": "Kopieer issues als Claude-prompt",
+        "title": "Copy issues as Claude prompt",
         "category": "UI Audit",
         "icon": "$(sparkle)"
       },
       {
         "command": "uiAudit.fixWithClaudeCode",
-        "title": "Fix issues met Claude Code",
+        "title": "Fix issues with Claude Code",
         "category": "UI Audit",
         "icon": "$(terminal)"
       },
       {
         "command": "uiAudit.mailDeveloper",
-        "title": "Mail issues naar developer",
+        "title": "Mail issues to developer",
         "category": "UI Audit",
         "icon": "$(mail)"
       }
@@ -210,7 +210,7 @@
         "uiAudit.viewports": {
           "type": "array",
           "default": [],
-          "markdownDescription": "Eigen viewports om te scannen. Leeg = Desktop 1440, Tablet 768, Mobiel 390. Voorbeeld: `[{\"id\":\"mobile\",\"label\":\"Mobiel\",\"width\":375,\"height\":667,\"mobile\":true}]`",
+          "markdownDescription": "Custom viewports to scan. Empty = Desktop 1440, Tablet 768, Mobile 390. Example: `[{\"id\":\"mobile\",\"label\":\"Mobile\",\"width\":375,\"height\":667,\"mobile\":true}]`",
           "items": {
             "type": "object",
             "properties": {
@@ -235,52 +235,52 @@
         "uiAudit.spacingBase": {
           "type": "number",
           "default": 4,
-          "description": "Basis van je spacing-grid in px. Waardes die hier geen veelvoud van zijn worden als 'off-grid' gemeld."
+          "description": "Base of your spacing grid in px. Values that are not a multiple of this are reported as 'off-grid'."
         },
         "uiAudit.clickTest": {
           "type": "boolean",
           "default": false,
-          "markdownDescription": "Klik in de scan écht op knoppen waarvan niet zeker is of ze iets doen, en kijk of er iets gebeurt. **Gebruik alleen op test/dev-omgevingen** (knoppen als 'verwijder', 'betaal', 'verstuur' worden overgeslagen)."
+          "markdownDescription": "During the scan, actually click buttons that may not do anything, and check whether something happens. **Only use on test/dev environments** (buttons like 'delete', 'pay', 'send' are skipped)."
         },
         "uiAudit.checkLinks": {
           "type": "boolean",
           "default": true,
-          "description": "Controleer of interne links een geldige pagina opleveren (geen 404/500)."
+          "description": "Check that internal links lead to a valid page (no 404/500)."
         },
         "uiAudit.checkExternalLinks": {
           "type": "boolean",
           "default": false,
-          "description": "Controleer ook links naar andere domeinen."
+          "description": "Also check links to other domains."
         },
         "uiAudit.developerEmail": {
           "type": "string",
           "default": "",
-          "description": "Standaard e-mailadres van de developer voor 'Mail developer'."
+          "description": "Default developer email address for 'Mail developer'."
         },
         "uiAudit.chromePath": {
           "type": "string",
           "default": "",
-          "description": "Pad naar Chrome/Edge/Chromium. Leeg = automatisch zoeken."
+          "description": "Path to Chrome/Edge/Chromium. Empty = detect automatically."
         },
         "uiAudit.timeoutMs": {
           "type": "number",
           "default": 30000,
-          "description": "Maximale laadtijd per pagina (ms)."
+          "description": "Maximum load time per page (ms)."
         },
         "uiAudit.liveDelayMs": {
           "type": "number",
           "default": 1500,
-          "description": "Wachttijd na opslaan voordat Live-modus opnieuw scant (ms)."
+          "description": "Delay after saving before Live mode rescans (ms)."
         },
         "uiAudit.reloadPreviewOnSave": {
           "type": "boolean",
           "default": true,
-          "description": "Device preview herladen als je een bestand opslaat."
+          "description": "Reload the device preview when you save a file."
         },
         "uiAudit.showInProblems": {
           "type": "boolean",
           "default": true,
-          "description": "Toon gevonden issues ook in het Problems-paneel, op de regel in je broncode."
+          "description": "Also show found issues in the Problems panel, on the line in your source code."
         }
       }
     },

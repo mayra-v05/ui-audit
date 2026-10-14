@@ -1,6 +1,6 @@
 /* eslint-disable */
-// Draait vóór alle scripts van de pagina (evaluateOnNewDocument).
-// Houdt bij welke elementen interactie-listeners krijgen, zodat we "dode" knoppen kunnen herkennen.
+// Runs before all of the page's scripts (evaluateOnNewDocument).
+// Tracks which elements get interaction listeners, so we can detect "dead" buttons.
 module.exports = function uiaPreload() {
   if (window.__uiaInstalled) return;
   window.__uiaInstalled = true;
@@ -19,7 +19,7 @@ module.exports = function uiaPreload() {
   };
 
   const frameworkHandler = (el, types) => {
-    // React: __reactProps$xxx bevat de props, inclusief onClick
+    // React: __reactProps$xxx holds the props, including onClick
     for (const k in el) {
       if (k.startsWith('__reactProps$')) {
         const p = el[k] || {};
@@ -52,13 +52,13 @@ module.exports = function uiaPreload() {
       cur = cur.parentElement;
       depth++;
     }
-    // Gedelegeerde listeners op document/body/root?
+    // Delegated listeners on document/body/root?
     const globals = [window, document, document.documentElement, document.body];
     let c = el;
     while (c && c.nodeType === 1) { if (isRoot(c)) globals.push(c); c = c.parentElement; }
     const delegated = globals.some((g) => { const s = g && reg.get(g); return s && types.some((t) => s.has(t)); });
     if (delegated) {
-      // React delegeert altijd via de root, maar roept alleen props-handlers aan → geen prop = dood
+      // React always delegates via the root, but only calls props handlers → no prop = dead
       if (isReactManaged(el)) return 'none';
       return 'unknown';
     }

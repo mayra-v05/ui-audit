@@ -7,7 +7,7 @@ const KEY = 'uiAudit.projects';
 const KEEP_SCANS = 5;
 
 /**
- * Projecten staan in globalState (klein), scans + screenshots als bestanden in globalStorage.
+ * Projects live in globalState (small), scans + screenshots as files in globalStorage.
  * project: { id, name, url, workspaceFolder, live, ignored: string[], scans: [{id, date, counts}] }
  */
 class Store {

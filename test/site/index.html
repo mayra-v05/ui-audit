@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="nl">
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Testsite met fouten</title>
+<title>Test site with bugs</title>
 <style>
   body { font-family: system-ui, sans-serif; margin: 0; }
   header { display: flex; gap: 16px; align-items: center; padding: 16px 24px; background: #111; color: #fff; }
@@ -21,47 +21,47 @@
 <body>
 <header>
   <a href="/">Home</a>
-  <a href="#diensten">Diensten</a>
-  <a href="#">Over ons</a>
-  <a href="/bestaat-niet">Blog</a>
+  <a href="#services">Services</a>
+  <a href="#">About us</a>
+  <a href="/does-not-exist">Blog</a>
   <a href="/contact.html">Contact</a>
 </header>
 
 <section class="hero">
-  <h1>Welkom bij de testsite</h1>
-  <p class="muted">Deze tekst heeft veel te weinig contrast met de achtergrond.</p>
+  <h1>Welcome to the test site</h1>
+  <p class="muted">This text has far too little contrast with the background.</p>
   <p>Lorem ipsum dolor sit amet, consectetur.</p>
-  <p>Prijs: <span id="prijs">undefined</span></p>
+  <p>Price: <span id="price">undefined</span></p>
 </section>
 
 <div class="actions">
-  <button class="btn" onclick="alert('ok')">Werkt</button>
-  <button class="btn" style="padding: 12px 22px">Doet niks</button>
+  <button class="btn" onclick="alert('ok')">Works</button>
+  <button class="btn" style="padding: 12px 22px">Does nothing</button>
   <button class="btn" id="btn-js">Via JS</button>
-  <button class="btn" style="margin-top:3px" onclick="void 0">Zakt 3px</button>
+  <button class="btn" style="margin-top:3px" onclick="void 0">Drops 3px</button>
 </div>
 
 <div class="list">
   <div class="item">Item 1</div>
   <div class="item">Item 2</div>
-  <div class="item" style="margin-bottom: 20px">Item 3 (te veel ruimte eronder)</div>
+  <div class="item" style="margin-bottom: 20px">Item 3 (too much space below)</div>
   <div class="item">Item 4</div>
-  <div class="item" style="margin-left: 3px">Item 5 (3px naar rechts)</div>
+  <div class="item" style="margin-left: 3px">Item 5 (3px to the right)</div>
 </div>
 
 <div class="cards">
-  <div class="card">Kaart A</div>
-  <div class="card">Kaart B</div>
-  <div class="card">Kaart C</div>
+  <div class="card">Card A</div>
+  <div class="card">Card B</div>
+  <div class="card">Card C</div>
 </div>
 
 <div class="tiny"><a href="/contact.html">x</a></div>
 
-<img src="/img/bestaat-niet.png">
-<img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='red'/></svg>" style="width:300px;height:100px" alt="vervormd">
+<img src="/img/does-not-exist.png">
+<img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='red'/></svg>" style="width:300px;height:100px" alt="distorted">
 
 <script>
-  document.getElementById('btn-js').addEventListener('click', () => console.log('klik'));
+  document.getElementById('btn-js').addEventListener('click', () => console.log('click'));
   fetch('/api/users').then(r => r.json()).then(d => {});
   setTimeout(() => { throw new Error('Cannot read properties of undefined (reading "name")'); }, 10);
 </script>

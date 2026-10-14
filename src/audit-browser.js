@@ -1,6 +1,6 @@
 /* eslint-disable */
-// Deze functie wordt als string in de pagina geïnjecteerd (page.evaluate).
-// Ze moet dus volledig zelfstandig zijn: geen imports, geen closures naar buiten.
+// This function is injected into the page as a string (page.evaluate).
+// So it must be fully self-contained: no imports, no closures to the outside.
 module.exports = function uiAudit(opts) {
   const issues = [];
   const vw = document.documentElement.clientWidth;
@@ -72,7 +72,7 @@ module.exports = function uiAudit(opts) {
   }
 
   function sourceHints(el) {
-    // Info die helpt het element in de broncode terug te vinden
+    // Info that helps find the element back in the source code
     const hints = { id: el.id || null, classes: [...el.classList].slice(0, 6), text: textOf(el).slice(0, 50) };
     const ancestorWithId = el.parentElement && el.parentElement.closest('[id]');
     if (ancestorWithId) hints.ancestorId = ancestorWithId.id;
@@ -95,7 +95,7 @@ module.exports = function uiAudit(opts) {
   }
 
   function mode(values, tol) {
-    // Geeft de meest voorkomende waarde (met tolerantie) terug en hoe vaak die voorkomt
+    // Returns the most common value (with tolerance) and how often it occurs
     const buckets = [];
     for (const v of values) {
       const b = buckets.find((x) => Math.abs(x.v - v) <= tol);
@@ -106,7 +106,7 @@ module.exports = function uiAudit(opts) {
     return buckets[0] || { v: 0, n: 0 };
   }
 
-  // ---------- verzamel zichtbare elementen ----------
+  // ---------- collect visible elements ----------
   const all = [];
   const csCache = new Map();
   const walker = document.createTreeWalker(document.body || document.documentElement, NodeFilter.SHOW_ELEMENT);
@@ -130,7 +130,7 @@ module.exports = function uiAudit(opts) {
   const kindOf = (el) => el.tagName + '|' + [...el.classList].filter((c) => !/^(active|current|selected|is-|has-)/.test(c)).sort().join('.');
   const sameKind = (a, b) => kindOf(a) === kindOf(b);
 
-  // ---------- 1. Uitlijning & gaps binnen groepen broers/zussen ----------
+  // ---------- 1. Alignment & gaps within sibling groups ----------
   const parents = new Set(all.map((e) => e.parentElement).filter(Boolean));
   for (const parent of parents) {
     if (/^(PRE|CODE|P|SPAN|A|LABEL|H[1-6]|TEXTAREA|svg)$/.test(parent.tagName)) continue;
@@ -138,7 +138,7 @@ module.exports = function uiAudit(opts) {
     if (kids.length < 3) continue;
     const rects = kids.map((k) => k.getBoundingClientRect());
 
-    // Bepaal of de kinderen in een kolom (onder elkaar) of rij (naast elkaar) staan
+    // Determine whether the children form a column (stacked) or a row (side by side)
     let stacked = 0, sideBySide = 0;
     for (let i = 1; i < rects.length; i++) {
       if (rects[i].top >= rects[i - 1].bottom - 2) stacked++;
@@ -147,7 +147,7 @@ module.exports = function uiAudit(opts) {
     const n = rects.length - 1;
 
     if (stacked === n) {
-      // Kolom: linkerranden moeten gelijk zijn (of midden/rechts uitgelijnd)
+      // Column: left edges should match (or be center/right aligned)
       const L = rects.map((r) => r.left), C = rects.map((r) => r.left + r.width / 2);
       const mL = mode(L, 0.5), mC = mode(C, 0.5);
       if (mL.n >= 2 && mL.n >= kids.length / 2) {
@@ -156,14 +156,14 @@ module.exports = function uiAudit(opts) {
           const centered = Math.abs(C[i] - mC.v) < 0.5 && mC.n >= mL.n;
           if (Math.abs(d) >= 1 && Math.abs(d) <= 8 && !centered) {
             add('align-x', 'layout', 'warning', k,
-              `Element staat ${r1(Math.abs(d))}px ${d > 0 ? 'naar rechts' : 'naar links'} t.o.v. de rest`,
-              `${mL.n} van de ${kids.length} items in deze kolom beginnen op x=${r1(mL.v)}px, dit item op x=${r1(L[i])}px.`,
-              `Lijn dit element uit met de andere items (controleer margin-left/padding-left of een afwijkende wrapper).`,
+              `Element is ${r1(Math.abs(d))}px ${d > 0 ? 'to the right' : 'to the left'} of the rest`,
+              `${mL.n} of the ${kids.length} items in this column start at x=${r1(mL.v)}px, this item at x=${r1(L[i])}px.`,
+              `Align this element with the other items (check margin-left/padding-left or a deviating wrapper).`,
               { measure: { expected: r1(mL.v), actual: r1(L[i]), diff: r1(d) } });
           }
         });
       }
-      // Verticale gaps
+      // Vertical gaps
       if (kids.length >= 3) {
         const gaps = [];
         for (let i = 1; i < rects.length; i++) gaps.push(sameKind(kids[i], kids[i - 1]) ? rects[i].top - rects[i - 1].bottom : null);
@@ -175,16 +175,16 @@ module.exports = function uiAudit(opts) {
             const d = g - mG.v;
             if (Math.abs(d) >= 1 && Math.abs(d) <= 12) {
               add('gap-y', 'spacing', 'warning', kids[i + 1],
-                `Afwijkende verticale ruimte: ${r1(g)}px i.p.v. ${r1(mG.v)}px`,
-                `Tussen de andere items in deze lijst zit ${r1(mG.v)}px ruimte, boven dit item ${r1(g)}px (${d > 0 ? '+' : ''}${r1(d)}px).`,
-                `Gebruik dezelfde margin/gap als de andere items (bij voorkeur 'gap' op de parent).`,
+                `Irregular vertical spacing: ${r1(g)}px instead of ${r1(mG.v)}px`,
+                `The other items in this list are ${r1(mG.v)}px apart, the space above this item is ${r1(g)}px (${d > 0 ? '+' : ''}${r1(d)}px).`,
+                `Use the same margin/gap as the other items (preferably 'gap' on the parent).`,
                 { measure: { expected: r1(mG.v), actual: r1(g), diff: r1(d) } });
             }
           });
         }
       }
     } else if (sideBySide === n) {
-      // Rij: boven-, midden- of onderkant moet gelijk zijn
+      // Row: top, middle or bottom should match
       const T = rects.map((r) => r.top), M = rects.map((r) => r.top + r.height / 2), B = rects.map((r) => r.bottom);
       const mT = mode(T, 0.5), mM = mode(M, 0.5), mB = mode(B, 0.5);
       const best = [mT, mM, mB].sort((a, b) => b.n - a.n)[0];
@@ -196,9 +196,9 @@ module.exports = function uiAudit(opts) {
           const which = best === mT ? offT : best === mM ? offM : offB;
           if (Math.abs(which) >= 1 && Math.abs(which) <= 8) {
             add('align-y', 'layout', 'warning', k,
-              `Element staat ${r1(Math.abs(which))}px ${which > 0 ? 'lager' : 'hoger'} dan de rest van de rij`,
-              `${best.n} van de ${kids.length} items in deze rij zijn uitgelijnd, dit item wijkt ${r1(which)}px af.`,
-              `Gebruik align-items op de parent en verwijder afwijkende margin-top/padding of line-height op dit item.`,
+              `Element is ${r1(Math.abs(which))}px ${which > 0 ? 'lower' : 'higher'} than the rest of the row`,
+              `${best.n} of the ${kids.length} items in this row are aligned, this item is off by ${r1(which)}px.`,
+              `Use align-items on the parent and remove deviating margin-top/padding or line-height on this item.`,
               { measure: { diff: r1(which) } });
           }
         });
@@ -213,9 +213,9 @@ module.exports = function uiAudit(opts) {
           const d = g - mG.v;
           if (Math.abs(d) >= 1 && Math.abs(d) <= 12) {
             add('gap-x', 'spacing', 'warning', kids[i + 1],
-              `Afwijkende horizontale ruimte: ${r1(g)}px i.p.v. ${r1(mG.v)}px`,
-              `De andere items in deze rij hebben ${r1(mG.v)}px tussenruimte, links van dit item ${r1(g)}px (${d > 0 ? '+' : ''}${r1(d)}px).`,
-              `Gebruik 'gap' op de parent i.p.v. losse margins, of maak de margin gelijk aan de andere items.`,
+              `Irregular horizontal spacing: ${r1(g)}px instead of ${r1(mG.v)}px`,
+              `The other items in this row are ${r1(mG.v)}px apart, the space left of this item is ${r1(g)}px (${d > 0 ? '+' : ''}${r1(d)}px).`,
+              `Use 'gap' on the parent instead of separate margins, or match the margin of the other items.`,
               { measure: { expected: r1(mG.v), actual: r1(g), diff: r1(d) } });
           }
         });
@@ -223,7 +223,7 @@ module.exports = function uiAudit(opts) {
     }
   }
 
-  // ---------- 2. Consistentie van knoppen / inputs (zelfde soort = zelfde maten) ----------
+  // ---------- 2. Consistency of buttons / inputs (same kind = same sizes) ----------
   const isButtonLike = (el) => {
     const t = el.tagName;
     if (t === 'BUTTON') return true;
@@ -243,7 +243,7 @@ module.exports = function uiAudit(opts) {
   }
   const valOf = (el, p) => p === 'height' ? r1(el.getBoundingClientRect().height) : cs(el)[p];
   for (const [sig, list] of groups) {
-    if (list.length < 3 || sig.endsWith('|')) continue; // zonder classes geen betrouwbare groep
+    if (list.length < 3 || sig.endsWith('|')) continue; // without classes there is no reliable group
     for (const p of props) {
       const vals = list.map((el) => String(valOf(el, p)));
       const counts = {};
@@ -253,15 +253,15 @@ module.exports = function uiAudit(opts) {
       list.forEach((el, i) => {
         if (vals[i] !== top) {
           add('btn-inconsistent', 'spacing', 'warning', el,
-            `Knop wijkt af van zijn variant: ${p} = ${vals[i]} i.p.v. ${top}`,
-            `${topN} van de ${list.length} knoppen met dezelfde classes hebben ${p}: ${top}. Deze heeft ${vals[i]}.`,
-            `Verwijder de afwijkende ${p} (inline style of extra selector) zodat de knop overeenkomt met de rest.`,
+            `Button differs from its variant: ${p} = ${vals[i]} instead of ${top}`,
+            `${topN} of the ${list.length} buttons with the same classes have ${p}: ${top}. This one has ${vals[i]}.`,
+            `Remove the deviating ${p} (inline style or extra selector) so the button matches the rest.`,
             { measure: { property: p, expected: top, actual: vals[i] } });
         }
       });
     }
   }
-  // Bijna-gelijke knophoogtes over de hele pagina (bv. 42px vs 44px)
+  // Near-identical button heights across the whole page (e.g. 42px vs 44px)
   const nearMiss = (els, getter, label, unit, maxDiff) => {
     const vals = els.map(getter);
     const counts = {};
@@ -272,20 +272,20 @@ module.exports = function uiAudit(opts) {
       if (counts[v] > 1 && counts[v] >= 3) return;
       const near = common.find((c) => c.v !== v && Math.abs(c.v - v) > 0.4 && Math.abs(c.v - v) <= maxDiff && c.n > counts[v]);
       if (near) {
-        add('near-miss-' + label, 'spacing', 'info', el,
-          `${label[0].toUpperCase() + label.slice(1)} ${v}${unit} lijkt op ${near.v}${unit} (${near.n}× gebruikt)`,
-          `Bijna-gelijke maten wijzen meestal op een slordigheid i.p.v. een bewuste keuze.`,
-          `Gebruik ${near.v}${unit} (of een design token) voor consistentie.`,
+        add('near-miss-' + label.replace(/ /g, '-'), 'spacing', 'info', el,
+          `${label[0].toUpperCase() + label.slice(1)} ${v}${unit} is close to ${near.v}${unit} (used ${near.n}×)`,
+          `Near-identical sizes usually point to an inconsistency rather than a deliberate choice.`,
+          `Use ${near.v}${unit} (or a design token) for consistency.`,
           { measure: { expected: near.v, actual: v } });
       }
     });
   };
-  nearMiss(buttons, (b) => Math.round(b.getBoundingClientRect().height), 'knophoogte', 'px', 4);
+  nearMiss(buttons, (b) => Math.round(b.getBoundingClientRect().height), 'button height', 'px', 4);
   nearMiss(buttons, (b) => Math.round(px(cs(b).borderRadius)), 'border-radius', 'px', 3);
   const inputs = all.filter((el) => /^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName) && !/^(checkbox|radio|hidden|range|color|file|submit|button)$/i.test(el.type || ''));
-  nearMiss(inputs.filter((i) => i.tagName !== 'TEXTAREA'), (b) => Math.round(b.getBoundingClientRect().height), 'inputhoogte', 'px', 4);
+  nearMiss(inputs.filter((i) => i.tagName !== 'TEXTAREA'), (b) => Math.round(b.getBoundingClientRect().height), 'input height', 'px', 4);
 
-  // Koppen van hetzelfde niveau met verschillende stijl
+  // Headings of the same level with a different style
   for (const h of ['H1', 'H2', 'H3', 'H4']) {
     const hs = all.filter((e) => e.tagName === h);
     if (hs.length < 3) continue;
@@ -300,29 +300,29 @@ module.exports = function uiAudit(opts) {
         if (vals[i] !== top && (p !== 'marginBottom' || Math.abs(px(vals[i]) - px(top)) <= 12)) (dev[vals[i]] = dev[vals[i]] || []).push(e);
       });
       for (const [v, els] of Object.entries(dev)) {
-        if (els.length > topN / 2) continue; // twee bewuste varianten, geen uitschieter
+        if (els.length > topN / 2) continue; // two deliberate variants, not an outlier
         add('heading-inconsistent', 'spacing', 'info', els[0],
-          `${h.toLowerCase()} met afwijkende ${p}: ${v} i.p.v. ${top}${els.length > 1 ? ` (${els.length}×)` : ''}`,
-          `${topN} van de ${hs.length} ${h.toLowerCase()}-koppen gebruiken ${p}: ${top}.`,
-          `Maak deze kop gelijk aan de andere ${h.toLowerCase()}-koppen of gebruik een aparte, bewuste variant.`,
+          `${h.toLowerCase()} with deviating ${p}: ${v} instead of ${top}${els.length > 1 ? ` (${els.length}×)` : ''}`,
+          `${topN} of the ${hs.length} ${h.toLowerCase()} headings use ${p}: ${top}.`,
+          `Match this heading to the other ${h.toLowerCase()} headings or use a separate, deliberate variant.`,
           { measure: { property: p, expected: top, actual: v }, examples: els.length > 1 ? els.slice(0, 6).map(selectorOf) : undefined });
       }
     }
   }
 
-  // ---------- 3. Spacing buiten het grid ----------
+  // ---------- 3. Spacing outside the grid ----------
   const offGrid = new Map();
   for (const el of all) {
     const s = cs(el);
     for (const p of ['paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'rowGap', 'columnGap']) {
       const v = px(s[p]);
       if (!v || Math.abs(v) <= 2) continue;
-      if (Math.abs(v - Math.round(v)) > 0.01) continue; // em/rem-afgeleide waardes (bv. browser-defaults) overslaan
+      if (Math.abs(v - Math.round(v)) > 0.01) continue; // skip em/rem-derived values (e.g. browser defaults)
       if (s[p].endsWith('%') || Math.abs(v) > 200) continue;
       if (p.startsWith('margin') && (s[p] === 'auto')) continue;
       const rounded = Math.round(Math.abs(v) * 100) / 100;
       if (rounded % base === 0) continue;
-      // margin-left/right die van 'auto' komt (centreren) overslaan
+      // skip margin-left/right that comes from 'auto' (centering)
       if ((p === 'marginLeft' || p === 'marginRight') && Math.abs(px(s.marginLeft) - px(s.marginRight)) < 1 && rounded > 20) continue;
       const key = rounded + 'px';
       if (!offGrid.has(key)) offGrid.set(key, { count: 0, els: [], props: new Set() });
@@ -334,16 +334,16 @@ module.exports = function uiAudit(opts) {
   }
   for (const [val, o] of [...offGrid].sort((a, b) => b[1].count - a[1].count).slice(0, 15)) {
     add('off-grid', 'spacing', 'info', o.els[0],
-      `Spacing ${val} valt buiten het ${base}px-grid (${o.count}×)`,
-      `Gebruikt in: ${[...o.props].join(', ')}. Voorbeelden: ${o.els.map(selectorOf).slice(0, 3).join(' | ')}`,
-      `Rond af naar het dichtstbijzijnde veelvoud van ${base}px (${Math.round(px(val) / base) * base}px) of gebruik een spacing-token.`,
+      `Spacing ${val} is outside the ${base}px grid (${o.count}×)`,
+      `Used in: ${[...o.props].join(', ')}. Examples: ${o.els.map(selectorOf).slice(0, 3).join(' | ')}`,
+      `Round to the nearest multiple of ${base}px (${Math.round(px(val) / base) * base}px) or use a spacing token.`,
       { measure: { value: val, count: o.count }, examples: o.els.map(selectorOf) });
   }
 
-  // ---------- 4. Responsive / mobiel ----------
+  // ---------- 4. Responsive / mobile ----------
   const docW = document.documentElement.scrollWidth;
   if (docW > vw + 1) {
-    // zoek de veroorzakers: elementen die buiten de viewport steken en niet in een clip-container zitten
+    // find the culprits: elements sticking out of the viewport that aren't inside a clipping container
     const clipped = (el) => {
       let p = el.parentElement;
       while (p && p !== document.body) {
@@ -357,30 +357,30 @@ module.exports = function uiAudit(opts) {
       const r = el.getBoundingClientRect();
       if (cs(el).position === 'fixed' || clipped(el)) return false;
       if (r.right > vw + 1 || r.left < -1) return true;
-      // tekst/inhoud die buiten een element zonder overflow-clip loopt (bv. white-space: nowrap)
+      // text/content running outside an element without overflow clipping (e.g. white-space: nowrap)
       return cs(el).overflowX === 'visible' && r.left + el.scrollWidth > vw + 1 && [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
     });
     const roots = culprits.filter((el) => !culprits.includes(el.parentElement)).slice(0, 8);
     add('h-overflow', 'responsive', isMobile ? 'error' : 'warning', roots[0] || document.body,
-      `Pagina scrollt horizontaal (${docW}px breed bij ${vw}px viewport)`,
-      `Er steekt content ${docW - vw}px buiten het scherm. Veroorzakers: ${roots.map(selectorOf).join(' | ') || 'onbekend'}.`,
-      `Geef deze elementen max-width: 100%, laat tekst/flex-items wrappen (flex-wrap, min-width: 0) of gebruik overflow-x: auto op tabellen/codeblokken.`,
+      `Page scrolls horizontally (${docW}px wide at ${vw}px viewport)`,
+      `Content sticks out ${docW - vw}px beyond the screen. Culprits: ${roots.map(selectorOf).join(' | ') || 'unknown'}.`,
+      `Give these elements max-width: 100%, let text/flex items wrap (flex-wrap, min-width: 0) or use overflow-x: auto on tables/code blocks.`,
       { measure: { docWidth: docW, viewport: vw } });
     roots.slice(1).forEach((el) => {
       const r = el.getBoundingClientRect();
       const over = Math.max(r.right - vw, -r.left, r.left + el.scrollWidth - vw);
       add('overflow-el', 'responsive', isMobile ? 'error' : 'warning', el,
-        `Element steekt ${r1(over)}px buiten het scherm`,
-        `Breedte ${r1(Math.max(r.width, el.scrollWidth))}px, viewport ${vw}px.`,
-        `Gebruik max-width: 100% / width: auto of laat inhoud wrappen.`);
+        `Element sticks out ${r1(over)}px beyond the screen`,
+        `Width ${r1(Math.max(r.width, el.scrollWidth))}px, viewport ${vw}px.`,
+        `Use max-width: 100% / width: auto or let the content wrap.`);
     });
   }
 
   if (!document.querySelector('meta[name="viewport"]')) {
     add('no-viewport', 'responsive', 'error', null,
-      'Geen <meta name="viewport"> gevonden',
-      'Zonder viewport-meta tonen telefoons de desktopversie uitgezoomd.',
-      'Voeg <meta name="viewport" content="width=device-width, initial-scale=1"> toe aan de <head>.');
+      'No <meta name="viewport"> found',
+      'Without a viewport meta tag, phones show the desktop version zoomed out.',
+      'Add <meta name="viewport" content="width=device-width, initial-scale=1"> to the <head>.');
   }
 
   const interactive = all.filter((el) => el.matches('a[href], button, input:not([type=hidden]), select, textarea, [role=button], [onclick], summary, label[for]'));
@@ -392,28 +392,28 @@ module.exports = function uiAudit(opts) {
     };
     const smallOk = [];
     for (const el of interactive) {
-      // inline links in lopende tekst zijn uitgezonderd (WCAG 2.5.8)
+      // inline links in running text are exempt (WCAG 2.5.8)
       if (el.tagName === 'A' && cs(el).display === 'inline' && el.parentElement && /^(P|LI|SPAN|TD|DD)$/.test(el.parentElement.tagName)) continue;
       if (el.tagName === 'LABEL' || /^(checkbox|radio)$/i.test(el.type || '')) continue;
       const r = el.getBoundingClientRect();
       const min = Math.min(r.width, r.height);
       if (min < 24 && crowded(el)) {
         add('tap-target', 'responsive', 'error', el,
-          `Tikdoel te klein en te dicht op andere knoppen: ${r1(r.width)}×${r1(r.height)}px`,
-          `Op mobiel moet een klikbaar element minimaal 24×24px zijn, of genoeg ruimte hebben tot andere tikdoelen (WCAG 2.5.8). Hier ligt een ander tikdoel binnen 24px → mis-tikken.`,
-          `Vergroot padding of min-height naar 44px, of zet meer ruimte tussen de links/knoppen.`, { measure: { w: r1(r.width), h: r1(r.height) } });
+          `Tap target too small and too close to other buttons: ${r1(r.width)}×${r1(r.height)}px`,
+          `On mobile a clickable element must be at least 24×24px, or have enough space to other tap targets (WCAG 2.5.8). Here another tap target is within 24px → mis-taps.`,
+          `Increase padding or min-height to 44px, or add more space between the links/buttons.`, { measure: { w: r1(r.width), h: r1(r.height) } });
       } else if (min < 24) {
         add('tap-target', 'responsive', 'warning', el,
-          `Tikdoel klein: ${r1(r.width)}×${r1(r.height)}px`,
-          `Kleiner dan 24px. Er is wel ruimte omheen, maar 44×44px tikt een stuk prettiger.`,
-          `Vergroot padding of min-height naar 44px.`, { measure: { w: r1(r.width), h: r1(r.height) } });
+          `Small tap target: ${r1(r.width)}×${r1(r.height)}px`,
+          `Smaller than 24px. There is space around it, but 44×44px is much easier to tap.`,
+          `Increase padding or min-height to 44px.`, { measure: { w: r1(r.width), h: r1(r.height) } });
       } else if (min < 40) smallOk.push(el);
     }
     if (smallOk.length) {
       add('tap-target-small', 'responsive', 'info', smallOk[0],
-        `${smallOk.length} tikdoelen kleiner dan 44px`,
-        `Voldoet aan WCAG-minimum (24px), maar is kleiner dan de 44×44px uit Apple HIG / 48px Material.`,
-        `Overweeg extra padding op mobiel.`, { examples: smallOk.slice(0, 8).map(selectorOf) });
+        `${smallOk.length} tap targets smaller than 44px`,
+        `Meets the WCAG minimum (24px), but is smaller than the 44×44px from Apple HIG / 48px Material.`,
+        `Consider extra padding on mobile.`, { examples: smallOk.slice(0, 8).map(selectorOf) });
     }
     const smallText = new Map();
     for (const el of all) {
@@ -428,11 +428,11 @@ module.exports = function uiAudit(opts) {
     }
     for (const [k, els] of smallText) {
       add('small-text', 'responsive', 'warning', els[0],
-        `Tekst van ${k} is te klein op mobiel (${els.length}×)`,
-        `Tekst kleiner dan 12px is op een telefoon slecht leesbaar. Body-tekst liefst 16px.`,
-        `Verhoog font-size naar minimaal 12px (labels) / 16px (body).`, { examples: els.slice(0, 5).map(selectorOf) });
+        `Text of ${k} is too small on mobile (${els.length}×)`,
+        `Text smaller than 12px is hard to read on a phone. Body text should ideally be 16px.`,
+        `Increase font-size to at least 12px (labels) / 16px (body).`, { examples: els.slice(0, 5).map(selectorOf) });
     }
-    // fixed/sticky elementen die veel van het scherm bedekken
+    // fixed/sticky elements covering a large part of the screen
     for (const el of all) {
       const p = cs(el).position;
       if (p !== 'fixed' && p !== 'sticky') continue;
@@ -440,14 +440,14 @@ module.exports = function uiAudit(opts) {
       const inView = r.bottom > 0 && r.top < vh && r.right > 0 && r.left < vw;
       if (inView && r.width >= vw * 0.9 && r.height > vh * 0.3 && r.height < vh * 0.95) {
         add('fixed-cover', 'responsive', 'warning', el,
-          `Vast element bedekt ${Math.round((r.height / vh) * 100)}% van het scherm`,
-          `Een ${p}-element van ${r1(r.height)}px hoog neemt op mobiel veel ruimte in.`,
-          `Maak de header/banner compacter op kleine schermen of laat hem wegscrollen.`);
+          `Fixed element covers ${Math.round((r.height / vh) * 100)}% of the screen`,
+          `A ${p} element ${r1(r.height)}px tall takes up a lot of space on mobile.`,
+          `Make the header/banner more compact on small screens or let it scroll away.`);
       }
     }
   }
 
-  // Afgekapte tekst
+  // Clipped text
   for (const el of all) {
     const s = cs(el);
     if (!/(hidden|clip)/.test(s.overflowX + s.overflowY)) continue;
@@ -457,17 +457,17 @@ module.exports = function uiAudit(opts) {
     const yClip = el.scrollHeight > el.clientHeight + 2 && !s.webkitLineClamp && s.webkitLineClamp !== 'none' && !/-webkit-box/.test(s.display);
     if (xClip || yClip) {
       add('text-clipped', 'responsive', 'warning', el,
-        'Tekst wordt afgekapt',
-        `Inhoud is ${xClip ? (el.scrollWidth - el.clientWidth) + 'px te breed' : (el.scrollHeight - el.clientHeight) + 'px te hoog'} voor het element, en overflow staat op hidden.`,
-        xClip ? 'Laat de tekst wrappen of gebruik text-overflow: ellipsis.' : 'Verwijder de vaste hoogte of gebruik line-clamp bewust.');
+        'Text is clipped',
+        `Content is ${xClip ? (el.scrollWidth - el.clientWidth) + 'px too wide' : (el.scrollHeight - el.clientHeight) + 'px too tall'} for the element, and overflow is set to hidden.`,
+        xClip ? 'Let the text wrap or use text-overflow: ellipsis.' : 'Remove the fixed height or use line-clamp deliberately.');
     }
   }
 
-  // Overlappende broers/zussen
+  // Overlapping siblings
   let overlapCount = 0;
   for (const parent of parents) {
     if (overlapCount > 15) break;
-    if (/grid/.test(cs(parent).display)) continue; // grid-items mogen bewust dezelfde area delen
+    if (/grid/.test(cs(parent).display)) continue; // grid items may deliberately share the same area
     const kids = [...parent.children].filter((k) => visibleSet.has(k) && inFlow(k) && cs(k).transform === 'none' && (k.innerText || '').trim());
     for (let i = 0; i < kids.length && overlapCount <= 15; i++) {
       for (let j = i + 1; j < kids.length; j++) {
@@ -477,9 +477,9 @@ module.exports = function uiAudit(opts) {
         if (ix > 2 && iy > 2 && ix * iy > 40) {
           overlapCount++;
           add('overlap', 'layout', 'warning', kids[j],
-            'Elementen overlappen elkaar',
-            `Overlapt ${r1(ix)}×${r1(iy)}px met ${selectorOf(kids[i])}.`,
-            'Controleer negatieve margins, vaste hoogtes of te smalle containers (vooral op mobiel).',
+            'Elements overlap',
+            `Overlaps ${r1(ix)}×${r1(iy)}px with ${selectorOf(kids[i])}.`,
+            'Check negative margins, fixed heights or containers that are too narrow (especially on mobile).',
             { related: selectorOf(kids[i]) });
           break;
         }
@@ -487,15 +487,15 @@ module.exports = function uiAudit(opts) {
     }
   }
 
-  // ---------- 5. Afbeeldingen ----------
+  // ---------- 5. Images ----------
   for (const img of document.images) {
     if (!visibleSet.has(img)) continue;
     if (img.complete && img.naturalWidth === 0 && img.currentSrc) {
-      add('img-broken', 'content', 'error', img, 'Afbeelding laadt niet', `Bron: ${img.currentSrc}`, 'Controleer het pad / de bestandsnaam of de server-respons.');
+      add('img-broken', 'content', 'error', img, 'Image does not load', `Source: ${img.currentSrc}`, 'Check the path / file name or the server response.');
       continue;
     }
     if (!img.hasAttribute('alt')) {
-      add('img-alt', 'a11y', 'warning', img, 'Afbeelding zonder alt-tekst', `Bron: ${img.currentSrc || img.src}`, 'Voeg een beschrijvende alt toe, of alt="" voor decoratieve afbeeldingen.');
+      add('img-alt', 'a11y', 'warning', img, 'Image without alt text', `Source: ${img.currentSrc || img.src}`, 'Add a descriptive alt, or alt="" for decorative images.');
     }
     const s = cs(img);
     if (img.naturalWidth && (s.objectFit === 'fill' || !s.objectFit)) {
@@ -503,27 +503,27 @@ module.exports = function uiAudit(opts) {
       const nat = img.naturalWidth / img.naturalHeight, ren = r.width / r.height;
       const diff = Math.abs(ren - nat) / nat;
       if (diff > 0.05 && r.width > 20) {
-        add('img-distorted', 'content', 'warning', img, `Afbeelding is ${Math.round(diff * 100)}% vervormd`,
-          `Origineel ${img.naturalWidth}×${img.naturalHeight}, getoond als ${r1(r.width)}×${r1(r.height)}.`,
-          'Gebruik object-fit: cover/contain of zet height: auto.');
+        add('img-distorted', 'content', 'warning', img, `Image is ${Math.round(diff * 100)}% distorted`,
+          `Original ${img.naturalWidth}×${img.naturalHeight}, shown as ${r1(r.width)}×${r1(r.height)}.`,
+          'Use object-fit: cover/contain or set height: auto.');
       }
     }
     if (img.naturalWidth && img.getBoundingClientRect().width * (window.devicePixelRatio || 1) > img.naturalWidth * 1.3) {
-      add('img-lowres', 'content', 'info', img, 'Afbeelding is te laag van resolutie',
-        `Origineel ${img.naturalWidth}px breed, getoond op ${r1(img.getBoundingClientRect().width)}px → wazig.`,
-        'Lever een grotere versie aan (of gebruik srcset).');
+      add('img-lowres', 'content', 'info', img, 'Image resolution is too low',
+        `Original is ${img.naturalWidth}px wide, shown at ${r1(img.getBoundingClientRect().width)}px → blurry.`,
+        'Provide a larger version (or use srcset).');
     }
   }
 
-  // ---------- 6. Toegankelijkheid & contrast ----------
+  // ---------- 6. Accessibility & contrast ----------
   for (const el of interactive) {
     if (/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName)) {
       const labelled = el.labels && el.labels.length || el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title');
       if (!labelled && !/^(submit|button|reset|image)$/i.test(el.type)) {
-        add('input-label', 'a11y', 'warning', el, 'Invoerveld zonder label', `Placeholder: "${el.placeholder || ''}"`, 'Koppel een <label for> of aria-label (placeholder is geen label).');
+        add('input-label', 'a11y', 'warning', el, 'Input field without a label', `Placeholder: "${el.placeholder || ''}"`, 'Link a <label for> or aria-label (a placeholder is not a label).');
       }
     } else if (!textOf(el) && !el.querySelector('img[alt]:not([alt=""]), svg title')) {
-      add('no-name', 'a11y', 'warning', el, 'Klikbaar element zonder tekst/naam', 'Screenreaders kunnen niet zeggen wat dit element doet.', 'Voeg zichtbare tekst of een aria-label toe.');
+      add('no-name', 'a11y', 'warning', el, 'Clickable element without text/name', 'Screen readers cannot tell what this element does.', 'Add visible text or an aria-label.');
     }
   }
 
@@ -541,7 +541,7 @@ module.exports = function uiAudit(opts) {
     let cur = el;
     while (cur && cur.nodeType === 1) {
       const s = getComputedStyle(cur);
-      if (s.backgroundImage && s.backgroundImage !== 'none') return null; // onbetrouwbaar
+      if (s.backgroundImage && s.backgroundImage !== 'none') return null; // unreliable
       const c = parseColor(s.backgroundColor);
       if (c && c.a > 0.95) return c;
       cur = cur.parentElement;
@@ -552,14 +552,14 @@ module.exports = function uiAudit(opts) {
     let cur = el;
     while (cur && cur.nodeType === 1 && cur !== document.body) {
       const s = cs(cur);
-      if (parseFloat(s.opacity) < 1) return true;                 // fade-in animaties
+      if (parseFloat(s.opacity) < 1) return true;                 // fade-in animations
       const fill = s.webkitTextFillColor && parseColor(s.webkitTextFillColor);
-      if (s.webkitTextFillColor === 'transparent' || (fill && fill.a === 0)) return true; // gradient-tekst
+      if (s.webkitTextFillColor === 'transparent' || (fill && fill.a === 0)) return true; // gradient text
       if (/text/.test(s.backgroundClip || s.webkitBackgroundClip || '')) return true;
       if (s.mixBlendMode && s.mixBlendMode !== 'normal') return true;
       const bgc = parseColor(s.backgroundColor);
-      if (bgc && bgc.a > 0.95) return false;                     // achtergrond gevonden zonder overlay
-      if (s.position === 'absolute' || s.position === 'fixed') return true; // tekst over media/overlay
+      if (bgc && bgc.a > 0.95) return false;                     // background found without overlay
+      if (s.position === 'absolute' || s.position === 'fixed') return true; // text over media/overlay
       cur = cur.parentElement;
     }
     return false;
@@ -585,13 +585,13 @@ module.exports = function uiAudit(opts) {
   }
   for (const g of [...contrastGroups.values()].slice(0, 20)) {
     add('contrast', 'a11y', g.ratio < 3 ? 'error' : 'warning', g.el,
-      `Te weinig contrast: ${g.ratio.toFixed(2)}:1 (minimaal ${g.need}:1)${g.els.length > 1 ? ` · ${g.els.length}×` : ''}`,
-      `Tekstkleur ${g.color} op achtergrond rgb(${g.bg.r}, ${g.bg.g}, ${g.bg.b}).`,
-      'Maak de tekst donkerder/lichter of pas de achtergrond aan (WCAG AA).',
+      `Insufficient contrast: ${g.ratio.toFixed(2)}:1 (minimum ${g.need}:1)${g.els.length > 1 ? ` · ${g.els.length}×` : ''}`,
+      `Text color ${g.color} on background rgb(${g.bg.r}, ${g.bg.g}, ${g.bg.b}).`,
+      'Make the text darker/lighter or adjust the background (WCAG AA).',
       { measure: { ratio: +g.ratio.toFixed(2), need: g.need }, examples: g.els.length > 1 ? g.els.slice(0, 6).map(selectorOf) : undefined });
   }
 
-  // Bijna-gelijke kleuren (designsysteem-slordigheid)
+  // Near-identical colors (design system inconsistency)
   const colorUse = new Map();
   for (const el of all) {
     const s = cs(el);
@@ -612,21 +612,21 @@ module.exports = function uiAudit(opts) {
         reported.add(b.k);
         const hex = (c) => '#' + [c.r, c.g, c.b].map((v) => v.toString(16).padStart(2, '0')).join('');
         add('near-color', 'spacing', 'info', null,
-          `Bijna-gelijke kleuren: ${hex(b)} (${b.n}×) vs ${hex(a)} (${a.n}×)`,
-          'Twee kleuren die visueel nauwelijks verschillen wijzen op hardcoded waardes i.p.v. één kleurtoken.',
-          `Vervang ${hex(b)} door ${hex(a)} (of een CSS-variabele).`, { measure: { expected: hex(a), actual: hex(b) } });
+          `Near-identical colors: ${hex(b)} (${b.n}×) vs ${hex(a)} (${a.n}×)`,
+          'Two colors that barely differ visually point to hardcoded values instead of a single color token.',
+          `Replace ${hex(b)} with ${hex(a)} (or a CSS variable).`, { measure: { expected: hex(a), actual: hex(b) } });
       }
     }
   }
 
-  // Dubbele IDs
+  // Duplicate IDs
   const ids = {};
   document.querySelectorAll('[id]').forEach((e) => (ids[e.id] = (ids[e.id] || 0) + 1));
   Object.entries(ids).filter(([, n]) => n > 1).slice(0, 10).forEach(([id, n]) => {
-    add('dup-id', 'a11y', 'warning', document.getElementById(id), `ID "${id}" komt ${n}× voor`, 'IDs moeten uniek zijn; labels, ankers en scripts pakken anders het verkeerde element.', 'Maak het ID uniek.');
+    add('dup-id', 'a11y', 'warning', document.getElementById(id), `ID "${id}" occurs ${n}×`, 'IDs must be unique; otherwise labels, anchors and scripts pick the wrong element.', 'Make the ID unique.');
   });
 
-  // Placeholder-tekst
+  // Placeholder text
   const bodyText = document.body ? document.body.innerText : '';
   const ph = (bodyText.match(/lorem ipsum|dolor sit amet|\[object Object\]/gi) || []).concat(bodyText.match(/\b(TODO|FIXME|undefined|NaN|null)\b/g) || []);
   if (ph.length) {
@@ -635,13 +635,13 @@ module.exports = function uiAudit(opts) {
       const el = all.find((e) => [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.toLowerCase().includes(w)));
       const sev = /^(undefined|nan|null)$|object object/.test(w) ? 'error' : 'warning';
       add('placeholder', sev === 'error' ? 'backend' : 'content', sev, el || null,
-        `Tekst "${w}" zichtbaar op de pagina`,
-        sev === 'error' ? 'Dit wijst op een kapotte variabele of data die niet goed geladen wordt.' : 'Er staat nog placeholder-/ontwikkeltekst op de pagina.',
-        sev === 'error' ? 'Controleer de data/API-respons en de template die deze waarde rendert.' : 'Vervang door echte content.');
+        `Text "${w}" visible on the page`,
+        sev === 'error' ? 'This points to a broken variable or data that does not load correctly.' : 'There is still placeholder/development text on the page.',
+        sev === 'error' ? 'Check the data/API response and the template that renders this value.' : 'Replace with real content.');
     }
   }
 
-  // ---------- 7. Functionele checks: links & knoppen ----------
+  // ---------- 7. Functional checks: links & buttons ----------
   const links = [];
   for (const a of all.filter((e) => e.tagName === 'A')) {
     const href = a.getAttribute('href');
@@ -651,35 +651,35 @@ module.exports = function uiAudit(opts) {
     if (href === null || href.trim() === '' || href === '#' || /^javascript:\s*(void\(0\)|;)?\s*;?$/i.test(href)) {
       if (handled) continue;
       add('dead-link', 'functional', 'error', a,
-        `Link gaat nergens naartoe (href="${href === null ? '' : href}")`,
-        `"${textOf(a) || '(geen tekst)'}" heeft geen geldige bestemming en geen click-handler.`,
-        'Geef een echte URL op, of maak er een <button> van met een handler.');
+        `Link goes nowhere (href="${href === null ? '' : href}")`,
+        `"${textOf(a) || '(no text)'}" has no valid destination and no click handler.`,
+        'Provide a real URL, or turn it into a <button> with a handler.');
       continue;
     }
     if (href.startsWith('#') && href.length > 1) {
       const target = document.getElementById(decodeURIComponent(href.slice(1))) || document.querySelector(`a[name="${href.slice(1)}"]`);
       if (!target && !handled) {
-        add('broken-anchor', 'functional', 'error', a, `Anker ${href} bestaat niet op deze pagina`,
-          `"${textOf(a)}" verwijst naar een sectie die niet bestaat.`, `Voeg id="${href.slice(1)}" toe aan de juiste sectie of pas de link aan.`);
+        add('broken-anchor', 'functional', 'error', a, `Anchor ${href} does not exist on this page`,
+          `"${textOf(a)}" points to a section that does not exist.`, `Add id="${href.slice(1)}" to the right section or update the link.`);
       }
       continue;
     }
     if (/^(mailto|tel|sms):/i.test(href)) {
-      if (/^mailto:\s*$|^tel:\s*$/i.test(href)) add('dead-link', 'functional', 'error', a, `Lege ${href}-link`, '', 'Vul het e-mailadres/nummer in.');
+      if (/^mailto:\s*$|^tel:\s*$/i.test(href)) add('dead-link', 'functional', 'error', a, `Empty ${href} link`, '', 'Fill in the email address/number.');
       continue;
     }
     try {
       const u = new URL(href, location.href);
       if (/^https?:$/.test(u.protocol)) links.push({ url: u.href.split('#')[0], selector: selectorOf(a), text: textOf(a), rect: rectOf(a), html: snippet(a), hints: sourceHints(a) });
       if (location.protocol === 'https:' && u.protocol === 'http:') {
-        add('insecure-link', 'functional', 'info', a, 'Link naar onbeveiligde http:// URL', u.href, 'Gebruik https:// als de doelsite dat ondersteunt.');
+        add('insecure-link', 'functional', 'info', a, 'Link to insecure http:// URL', u.href, 'Use https:// if the target site supports it.');
       }
     } catch (e) {
-      add('bad-url', 'functional', 'error', a, `Ongeldige URL: ${href}`, '', 'Corrigeer de URL.');
+      add('bad-url', 'functional', 'error', a, `Invalid URL: ${href}`, '', 'Fix the URL.');
     }
   }
 
-  // Knoppen zonder werking
+  // Buttons that do nothing
   const buttonCandidates = [];
   for (const b of all.filter((e) => e.tagName === 'BUTTON' || e.getAttribute('role') === 'button' || (e.tagName === 'INPUT' && /^(button|submit)$/i.test(e.type)))) {
     if (b.disabled || b.getAttribute('aria-disabled') === 'true') continue;
@@ -694,25 +694,25 @@ module.exports = function uiAudit(opts) {
     buttonCandidates.push({ id, state, selector: selectorOf(b), text: textOf(b), rect: rectOf(b), html: snippet(b), hints: sourceHints(b) });
     if (state === 'none') {
       add('dead-button', 'functional', 'error', b,
-        `Knop "${textOf(b) || '(zonder tekst)'}" doet niets`,
-        form ? 'Knop staat in een formulier maar is geen submit-knop, en heeft geen click-handler.' : 'Er is geen click-handler, link of formulier gekoppeld aan deze knop.',
-        'Koppel een onClick/addEventListener-handler, zet hem in een <form>, of verwijder de knop als hij niet nodig is.');
+        `Button "${textOf(b) || '(no text)'}" does nothing`,
+        form ? 'Button is inside a form but is not a submit button, and has no click handler.' : 'There is no click handler, link or form attached to this button.',
+        'Attach an onClick/addEventListener handler, put it inside a <form>, or remove the button if it is not needed.');
     }
   }
 
-  // Formulieren zonder action en zonder submit-handler
+  // Forms without an action and without a submit handler
   for (const f of document.forms) {
     if (!visibleSet.has(f)) continue;
     const handled = window.__uiaHasHandler && window.__uiaHasHandler(f, ['submit']);
     if (!f.getAttribute('action') && handled === 'none' && !f.hasAttribute('onsubmit')) {
-      add('form-noop', 'functional', 'warning', f, 'Formulier zonder action of submit-handler',
-        'Bij verzenden wordt de huidige pagina herladen zonder dat de data ergens heen gaat.', 'Voeg een action-URL toe of handel submit af in JavaScript.');
+      add('form-noop', 'functional', 'warning', f, 'Form without action or submit handler',
+        'On submit the current page reloads without the data going anywhere.', 'Add an action URL or handle submit in JavaScript.');
     }
   }
 
-  // Lege/kapotte iframes
+  // Empty/broken iframes
   for (const fr of all.filter((e) => e.tagName === 'IFRAME')) {
-    if (!fr.getAttribute('src') && !fr.getAttribute('srcdoc')) add('iframe-empty', 'content', 'warning', fr, 'Leeg iframe', '', 'Geef een src op of verwijder het iframe.');
+    if (!fr.getAttribute('src') && !fr.getAttribute('srcdoc')) add('iframe-empty', 'content', 'warning', fr, 'Empty iframe', '', 'Provide a src or remove the iframe.');
   }
 
   return {

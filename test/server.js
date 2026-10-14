@@ -1,4 +1,4 @@
-// Mini dev-server voor de testsite: /api/* geeft een 500
+// Mini dev server for the test site: /api/* returns a 500
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
