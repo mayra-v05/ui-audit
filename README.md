@@ -1,53 +1,53 @@
-# UI Audit — design & bug checker voor VS Code
+# UI Audit — design & bug checker for VS Code
 
-Scan je website of lokale dev-server op UI-fouten, dode knoppen/links en backend-errors. Je ziet alles per project in één dashboard en exporteert het naar Claude, Claude Code of een developer.
+Scan your website or local dev server for UI bugs, dead buttons/links and backend errors. You see everything per project in one dashboard and can export it to Claude, Claude Code or a developer.
 
-## Wat wordt er gecheckt?
+## What does it check?
 
-| Categorie | Voorbeelden |
+| Category | Examples |
 |---|---|
-| **Layout & uitlijning** | Een element dat 1–8px naast de rest van zijn kolom staat, een knop die 3px lager staat dan de rest van de rij, overlappende elementen |
-| **Spacing & consistentie** | Afwijkende gaps in lijsten en rijen, knoppen van dezelfde variant met andere padding/hoogte/radius, bijna-gelijke maten (42px vs 44px), spacing buiten je 4px-grid, bijna-gelijke kleuren (#333 vs #343434), koppen met afwijkende stijl |
-| **Responsive / mobiel** | Horizontaal scrollen (met de veroorzaker erbij), ontbrekende viewport-meta, te kleine tikdoelen (WCAG 2.5.8), te kleine tekst, afgekapte tekst, fixed headers die het scherm bedekken |
-| **Knoppen & links** | Knoppen zonder handler (werkt ook met React, Vue, Alpine, htmx), `href="#"` of leeg, ankers naar secties die niet bestaan, links met 404/500, formulieren zonder action |
-| **Backend & console** | JavaScript-errors en exceptions, API-calls met 4xx/5xx, mislukte requests, trage endpoints, `undefined`, `NaN` of `[object Object]` in de UI |
-| **Content & toegankelijkheid** | Kapotte, vervormde of te laag-resolutie afbeeldingen, ontbrekende alt-teksten, contrast (WCAG AA), inputs zonder label, dubbele ID's, lorem ipsum |
+| **Layout & alignment** | An element sitting 1–8px off from the rest of its column, a button 3px lower than the rest of its row, overlapping elements |
+| **Spacing & consistency** | Irregular gaps in lists and rows, buttons of the same variant with different padding/height/radius, near-identical sizes (42px vs 44px), spacing outside your 4px grid, near-identical colors (#333 vs #343434), headings with a deviating style |
+| **Responsive / mobile** | Horizontal scrolling (including the element causing it), missing viewport meta, tap targets that are too small (WCAG 2.5.8), text that is too small, truncated text, fixed headers covering the screen |
+| **Buttons & links** | Buttons without a handler (also works with React, Vue, Alpine, htmx), empty or `href="#"` links, anchors pointing to sections that don't exist, links returning 404/500, forms without an action |
+| **Backend & console** | JavaScript errors and exceptions, API calls returning 4xx/5xx, failed requests, slow endpoints, `undefined`, `NaN` or `[object Object]` in the UI |
+| **Content & accessibility** | Broken, distorted or low-resolution images, missing alt text, contrast (WCAG AA), inputs without a label, duplicate IDs, lorem ipsum |
 
-Elke pagina wordt gescand op **Desktop (1440px)**, **Tablet (768px)** en **Mobiel (390px, met touch en iPhone-user-agent)**. Komt dezelfde fout op meerdere formaten voor, dan zie je hem één keer, met badges per formaat.
+Every page is scanned at **Desktop (1440px)**, **Tablet (768px)** and **Mobile (390px, with touch and an iPhone user agent)**. If the same issue appears at multiple sizes, you see it once, with a badge per size.
 
-## Gebruik
+## Usage
 
-1. Klik op het **UI Audit**-icoon in de activity bar en kies **Nieuw project**. De extensie zoekt zelf naar draaiende dev-servers (poort 3000, 5173, 4321, 8080, 5500 …). Je kunt ook een URL of een lokaal HTML-bestand opgeven.
-2. Het **dashboard** opent met:
-   - tellingen per ernst en per categorie, en wat er sinds de vorige scan nieuw of opgelost is;
-   - een lijst met issues, met selector, meting, voorgestelde fix, crop-screenshot en **het bronbestand + regelnummer** (klik om het te openen);
-   - de volledige screenshot per viewport met genummerde markeringen. Klik op een markering om naar het issue te springen;
-   - "Negeer (false positive)", zodat een issue niet meer meetelt.
-3. **📱 Device preview**: bekijk de site direct op iPhone SE/15/Pro Max, Pixel, Galaxy, iPad of desktop, roteer hem of kies een eigen breedte. Inspect is niet nodig.
-4. **Live**: zet Live aan, en dan wordt het project na elke save opnieuw gescand en de preview herladen.
-5. Issues verschijnen ook in het **Problems-paneel**, op de regel in je broncode.
+1. Click the **UI Audit** icon in the activity bar and choose **New project**. The extension automatically looks for running dev servers (ports 3000, 5173, 4321, 8080, 5500 …). You can also enter a URL or a local HTML file.
+2. The **dashboard** opens with:
+   - counts per severity and per category, plus what is new or fixed since the previous scan;
+   - a list of issues with selector, measurement, suggested fix, cropped screenshot and **the source file + line number** (click to open it);
+   - the full screenshot per viewport with numbered markers. Click a marker to jump to the issue;
+   - "Ignore (false positive)", so an issue no longer counts.
+3. **📱 Device preview**: view the site directly on iPhone SE/15/Pro Max, Pixel, Galaxy, iPad or desktop, rotate it or pick a custom width. No need for Inspect.
+4. **Live**: turn on Live and the project is rescanned and the preview reloaded after every save.
+5. Issues also show up in the **Problems panel**, on the matching line in your source code.
 
-## Exporteren
+## Exporting
 
-Exporteer alle issues in beeld, of vink er een paar aan:
+Export all visible issues, or tick a few:
 
-- **✦ Kopieer voor Claude**: kopieert een complete prompt met opdracht, selectors, bronbestanden, metingen en voorgestelde fixes. Plak hem in claude.ai.
-- **⌘ Fix met Claude Code**: schrijft `.ui-audit/issues.md` en crop-screenshots in je project (staat in `.gitignore`) en start `claude` in de terminal met de opdracht om alles op te lossen.
-- **✉ Mail developer**: opent je mailprogramma met een samenvatting en laat het HTML-rapport met screenshots zien, zodat je het als bijlage kunt meesturen.
-- **Exporteer**: Markdown, HTML-rapport, CSV (Excel/Sheets/Jira) of JSON.
+- **✦ Copy for Claude**: copies a complete prompt with the task, selectors, source files, measurements and suggested fixes. Paste it into claude.ai.
+- **⌘ Fix with Claude Code**: writes `.ui-audit/issues.md` and cropped screenshots into your project (listed in `.gitignore`) and starts `claude` in the terminal with the instruction to fix everything.
+- **✉ Mail developer**: opens your mail app with a summary and shows the HTML report with screenshots, so you can attach it.
+- **Export**: Markdown, HTML report, CSV (Excel/Sheets/Jira) or JSON.
 
-## Instellingen
+## Settings
 
-| Instelling | Standaard | |
+| Setting | Default | |
 |---|---|---|
-| `uiAudit.viewports` | Desktop/Tablet/Mobiel | Eigen schermformaten |
-| `uiAudit.spacingBase` | `4` | Je spacing-grid in px |
-| `uiAudit.clickTest` | `false` | Klikt écht op twijfelachtige knoppen om te zien of er iets gebeurt. Gebruik dit alleen op dev/test; knoppen als *verwijder/betaal/verstuur* worden overgeslagen |
-| `uiAudit.checkLinks` / `checkExternalLinks` | `true` / `false` | Links controleren op 404/500 |
-| `uiAudit.developerEmail` | – | Standaardontvanger voor de mail |
-| `uiAudit.chromePath` | automatisch | Chrome/Edge/Brave/Chromium |
-| `uiAudit.showInProblems` | `true` | Issues in het Problems-paneel |
+| `uiAudit.viewports` | Desktop/Tablet/Mobile | Custom screen sizes |
+| `uiAudit.spacingBase` | `4` | Your spacing grid in px |
+| `uiAudit.clickTest` | `false` | Actually clicks questionable buttons to see if anything happens. Only use this on dev/test; buttons like *delete/pay/send* are skipped |
+| `uiAudit.checkLinks` / `checkExternalLinks` | `true` / `false` | Check links for 404/500 |
+| `uiAudit.developerEmail` | – | Default recipient for the mail |
+| `uiAudit.chromePath` | automatic | Chrome/Edge/Brave/Chromium |
+| `uiAudit.showInProblems` | `true` | Show issues in the Problems panel |
 
-## Vereisten
+## Requirements
 
-Je hebt Google Chrome, Edge, Brave of Chromium nodig. De extensie gebruikt je bestaande browser headless en downloadt zelf niets.
+You need Google Chrome, Edge, Brave or Chromium. The extension runs your existing browser headless and doesn't download anything itself.
